@@ -1,81 +1,81 @@
-#.libPaths(c("~/Documents/Rpackages",.libPaths()))
+#######################################################################################
+# working directory, options, libraries
+
+setwd("/Volumes/Lab_Gerke/ShinyApps/LD_HIC")
+
+options(stringsAsFactors=FALSE)
+
 library(shiny)
 library(shinydashboard)
-library(data.table)
 library(biomaRt)
-library(plyr)
-library(dplyr)
-library(ggplot2)
-library(labeling)
-library(ggrepel)
-library(shinythemes)
-library(httr)
-#library(sqldf,lib.loc = "~/Documents/Rpackages")
-# library(shiny)
-# library(shinydashboard)
 # library(data.table)
-# library(biomaRt)
 # library(plyr)
 # library(dplyr)
 # library(ggplot2)
 # library(labeling)
-library(ggbio)
-library(GenomicRanges)
-#source("./Other_Code/gene_ids.R")
-#in R data for LD r2=col6 
+# library(ggrepel)
+# library(shinythemes)
+# library(httr)
+# library(ggbio)
+# library(GenomicRanges)
 
-ui<-dashboardPage(skin = "black",
-  dashboardHeader(title ="HIC viewer"),
-  dashboardSidebar(
-    sidebarMenu(id="tabs",
-                menuItem("SNPs",tabName="tab1"),
-                menuItem("Info",tabName="tab2"))
-  ),
-  dashboardBody(
-    tabItems(
-      tabItem(tabName="tab1",
-              fluidRow(
-              box(title = "Inputs",
-                  #change back to 22 
-                  sliderInput("chr","Chromosome",min=1,max=10,value=10),
-                  sliderInput("CHRboundary","Boundaries",min=0,max=247200000,value=c(0,20000)),
-                  textInput("rsids","Specific SNP of Interest?"),
-                  sliderInput("rthresh","R2 Threshold",min=0,max=1,value=0.8),
+#######################################################################################
+# set up dashboard
+
+ui <- dashboardPage(skin = "black",
+   dashboardHeader(title ="HIC viewer"),
+   dashboardSidebar(
+      sidebarMenu(id="tabs", 
+         menuItem("SNPs",tabName="tab1"), menuItem("Info",tabName="tab2"))
+   ),
+   dashboardBody(
+      tabItems(
+         tabItem(tabName="tab1",
+            fluidRow(
+            box(title = "Inputs",
+               #change back to 22 
+               sliderInput("chr","Chromosome",min=1,max=10,value=10),
+               sliderInput("CHRboundary","Boundaries",min=0,max=247200000,value=c(0,20000)),
+               textInput("rsids","Specific SNP of Interest?"),
+               sliderInput("rthresh","R2 Threshold",min=0,max=1,value=0.8),
                   actionButton("go1","Go!")),
-              # box(title="LD Snps",
-              #     dataTableOutput("LDresults")#,
-              #     #plotOutput("LDheatmap")
-              #     ),
-              tabBox(title="Tables",
-                     tabPanel("HI-C",
-                              textOutput("HICboundaries"),
-                              br(),
-                              tableOutput("HICGenes")),
-                     tabPanel("LD",
-                              dataTableOutput("LDresults"))
-                  
-              )),
-              fluidRow(
-                column(12,align="center",offset=2,
-              box(title="Visuals",
-                  #textOutput("HICboundaries"),
-                  #br(),
-                  #tableOutput("HICGenes"),
-                  sliderInput("HICintensity","HIC intensity",min=1,max=50,value=4),
-                  plotOutput("HICheatmap", height = "600px", width = "750px"),width=8)))),
-      tabItem(tabName="tab2",
-        textOutput("LDinfo"))
-    )
-  )
+               # box(title="LD Snps",
+               #     dataTableOutput("LDresults")#,
+               #     #plotOutput("LDheatmap")
+               #     ),
+               tabBox(title="Tables",
+                  tabPanel("HI-C",
+                     textOutput("HICboundaries"),
+                     br(),
+                     tableOutput("HICGenes")),
+                     tabPanel("LD", dataTableOutput("LDresults"))
+               )
+            ),
+            fluidRow(
+               column(12,align="center",offset=2,
+                  box(title="Visuals",
+                     #textOutput("HICboundaries"),
+                     #br(),
+                     #tableOutput("HICGenes"),
+                     sliderInput("HICintensity","HIC intensity",min=1,max=50,value=4),
+                     plotOutput("HICheatmap", height = "600px", width = "750px"),width=8))
+            )
+         ),
+         tabItem(tabName="tab2", textOutput("LDinfo"))
+      )
+   )
 )
-# Define server logic required to draw a histogram
-server <- shinyServer(function(input, output){
-  tads<-read.table("./Data/total.combined.domain",sep="")
 
-  tad_genes<-read.table("./Data/tad_genes.txt",sep="\t",header=TRUE)
+# Define server logic required to draw a histogram
+server <- shinyServer(function(input, output) {
+   ###do we need both of these datasets and the biomart we load?
+   tads <- read.table("./Data/total.combined.domain",sep="")
+   tad_genes <- read.table("./Data/tad_genes.txt", sep="\t", header=TRUE)
   
-  ensembl54=useMart("ENSEMBL_MART_ENSEMBL",dataset = "hsapiens_gene_ensembl")
-  dbsnp = useMart("ENSEMBL_MART_SNP", dataset = "hsapiens_snp")
+   ###loading the full useMart is a little slow. Looking ahead, we only use 3 
+   ###attributes. Why don't we write a separate script to create that smaller data?
+   ensembl54 <- useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
+   dbsnp <- useMart("ENSEMBL_MART_SNP", dataset = "hsapiens_snp")
 
   getBoundaries <- function(x, data) {
   tmp <- data %>%
