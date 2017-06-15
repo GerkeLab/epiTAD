@@ -7,7 +7,8 @@ options(stringsAsFactors=FALSE)
 
 library(shiny)
 library(shinydashboard)
-library(sqldf)
+library(readr)
+# library(sqldf)
 # library(data.table)
 # library(plyr)
 # library(dplyr)
@@ -80,6 +81,11 @@ server <- shinyServer(function(input, output) {
    sqltext <- paste0("select*from file where refsnp_id='", mysnp, "'")
    tempannot <- read.csv.sql("Data/snpAnnot.txt", sep="\t", header=TRUE,
                          sql=sqltext)
+   ###here's an example using readr which should be faster since uses chunks
+   mysnp <- "rs765616855"
+   tempannot <- read_delim_chunked("Data/snpAnnot.txt", delim="\t", 
+                                 callback=DataFrameCallback$new(function(x, pos) x['refsnp_id'==mysnp,]), 
+                                 progress=FALSE, chunk_size=50000)
 
   getBoundaries <- function(x, data) {
   tmp <- data %>%
