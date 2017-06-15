@@ -75,7 +75,7 @@ server <- shinyServer(function(input, output) {
   
    geneannot <- read.table("Data/geneAnnot.txt", sep="\t", header=TRUE)
    ###we should not pre-load this file! rather, query rows on an as-needed basis
-   snpannot <- read.table("Data/snpAnnot.txt", sep="\t", header=TRUE)
+   #snpannot <- read.table("Data/snpAnnot.txt", sep="\t", header=TRUE)
    ###here's an example using sqldf
    mysnp <- "rs765616855"
    sqltext <- paste0("select*from file where refsnp_id='", mysnp, "'")
@@ -87,6 +87,8 @@ server <- shinyServer(function(input, output) {
                                  callback=DataFrameCallback$new(function(x, pos) x['refsnp_id'==mysnp,]), 
                                  progress=FALSE, chunk_size=50000)
 
+   ### I don't think we need these functions. Let's just perform the subset inline with 
+   ### something like snp[loc1<=x & x<=loc2, 2,3]
   getBoundaries <- function(x, data) {
   tmp <- data %>%
     filter(V2 <= x, x <= V3)
