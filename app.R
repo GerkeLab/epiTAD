@@ -7,7 +7,7 @@ options(stringsAsFactors=FALSE)
 
 library(shiny)
 library(shinydashboard)
-library(biomaRt)
+library(sqldf)
 # library(data.table)
 # library(plyr)
 # library(dplyr)
@@ -68,15 +68,18 @@ ui <- dashboardPage(skin = "black",
 
 # Define server logic required to draw a histogram
 server <- shinyServer(function(input, output) {
-   ###do we need both of these datasets and the biomart we load?
+   ###do we need both of these datasets and the biomart info we load?
    tads <- read.table("./Data/total.combined.domain",sep="")
    tad_genes <- read.table("./Data/tad_genes.txt", sep="\t", header=TRUE)
   
-   ###loading the full useMart is a little slow. Looking ahead, we only use 3 
-   ###attributes. Why don't we write a separate script to create that smaller data?
-   #ensembl54 <- useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
    geneannot <- read.table("Data/geneAnnot.txt", sep="\t", header=TRUE)
-   dbsnp <- useMart("ENSEMBL_MART_SNP", dataset = "hsapiens_snp")
+   ###we should not pre-load this file! rather, query rows on an as-needed basis
+   snpannot <- read.table("Data/snpAnnot.txt", sep="\t", header=TRUE)
+   ###here's an example using sqldf
+   mysnp <- "rs765616855"
+   sqltext <- paste0("select*from file where refsnp_id='", mysnp, "'")
+   tempannot <- read.csv.sql("Data/snpAnnot.txt", sep="\t", header=TRUE,
+                         sql=sqltext)
 
   getBoundaries <- function(x, data) {
   tmp <- data %>%
