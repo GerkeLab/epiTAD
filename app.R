@@ -74,7 +74,8 @@ server <- shinyServer(function(input, output) {
   
    ###loading the full useMart is a little slow. Looking ahead, we only use 3 
    ###attributes. Why don't we write a separate script to create that smaller data?
-   ensembl54 <- useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
+   #ensembl54 <- useMart("ENSEMBL_MART_ENSEMBL", dataset="hsapiens_gene_ensembl")
+   geneannot <- read.table("Data/geneAnnot.txt", sep="\t", header=TRUE)
    dbsnp <- useMart("ENSEMBL_MART_SNP", dataset = "hsapiens_snp")
 
   getBoundaries <- function(x, data) {
