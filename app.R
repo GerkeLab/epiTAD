@@ -4,10 +4,8 @@ library(haploR)
 library(data.table)
 library(biomaRt)
 library(shinycssloaders)
-#library(plotly)
 library(jsonlite)
 library(Sushi)
-library(HiCDataHumanIMR90)
 library(HiTC)
 library(colorspace)
 
@@ -124,24 +122,13 @@ ui <- dashboardPage(dashboardHeader(title="epiTAD"),
                                                 tabPanel("Links",
                                                          uiOutput("clinical1"),
                                                          uiOutput("ucsc1")),
-                                                # tabPanel("Interactive",
-                                                #          withSpinner(plotlyOutput("plot1",height="450px"),color = "#00ffff", type = 6)),
-                                                # tabPanel("HIC",
-                                                #          withSpinner(plotOutput("hicPlot",height="450px"),color = "#00ffff", type = 6)),
-                                                # tabPanel("HIC with TADs",
-                                                #          withSpinner(plotOutput("hicPlot2",height="450px"),color = "#00ffff", type = 6)),
                                                 tabPanel("Figure",
-                                                         # uiOutput("plotStart"),
-                                                         # uiOutput("plotEnd"),
-                                                         # actionButton("updateBP","Update Coordinates"),
-                                                         #actionButton("updatePlotButton","Update Plot")
                                                          withSpinner(plotOutput("megaPlot",height="450px"),color = "#00ffff", type = 6),
                                                          h5(helpText("Coordinates must be at least 200000 BP apart")),
                                                          uiOutput("plotStart"),
                                                          uiOutput("plotEnd"),
                                                          actionButton("updateBP","Update Coordinates"),
                                                          actionButton("resetBP","Reset Plot"),
-                                                         # plotOutput("ideoPlot"),
                                                          downloadButton("plotDownload","Download Plot"),
                                                          selectInput("plotColor","Color Scheme",
                                                                      choices = list("Topo" = 1,
@@ -179,11 +166,8 @@ ui <- dashboardPage(dashboardHeader(title="epiTAD"),
 ###################################################################################################
 server <- function(input, output) {
   
-  #ensembl = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
-  # ensembl54=useMart("ENSEMBL_MART_ENSEMBL",dataset = "hsapiens_gene_ensembl")
   ensembl54 = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
-  #dbsnp = useMart("ENSEMBL_MART_SNP", dataset = "hsapiens_snp")
-  data(Dixon2012_IMR90)
+  load(url("https://github.com/tgerke/epiTAD/blob/master/data/hicData.Rdata?raw=true"))
   
   sample<-eventReactive(input$update1,{
     samplefile<-input$file1
@@ -196,7 +180,6 @@ server <- function(input, output) {
       dat<-sample()
       snps<-dat[,1]
       x<-queryHaploreg(query = snps,ldThresh = as.numeric(input$value), ldPop = input$pop)
-      #x<-x[,input$parameters]
       return(x)
     }
     if(input$snpList!=""){
@@ -214,10 +197,6 @@ server <- function(input, output) {
     etest<-unlist(strsplit(as.character(dat$eQTL),";"))
     etest <- etest[!etest %in% c(".")]
     etest2<-unlist(strsplit(etest,","))
-    # etest3<-matrix(etest2,nrow=length(etest), ncol=4, byrow = TRUE)
-    # etest3<-as.data.frame(etest3)
-    # etest3<-etest3[!duplicated(etest3$V2),]
-    # opt<-etest3$V2
     if(is.null(etest2)){
       return(verbatimTextOutput("No Tissues to Show"))
     } else {
@@ -227,13 +206,6 @@ server <- function(input, output) {
       opt<-etest3$V2
       return(checkboxGroupInput("tissue","Tissues",choices=opt, inline = TRUE))
     }
-    # if(nrow(etest3)>=1){
-    #   etest3<-matrix(etest2,nrow=length(etest), ncol=4, byrow = TRUE)
-    #   etest3<-as.data.frame(etest3)
-    #   etest3<-etest3[!duplicated(etest3$V2),]
-    #   opt<-etest3$V2
-    #   return(checkboxGroupInput("tissue","Tissues",choices=opt, inline = TRUE))
-    # } else(verbatimTextOutput("No Tissues to Show"))
   })
   
   dat2<-eventReactive(input$update1,{
@@ -260,7 +232,6 @@ server <- function(input, output) {
         else if (x$score[i]=="5"){x$score_anno[i]<-"TF binding or DNase peak"}
         else {x$score_anno[i]<-"Other"}
       }
-      #x<-x[,input$parameters]
       return(x)
     }
     if(input$snpList!=""){
@@ -314,8 +285,6 @@ server <- function(input, output) {
     dat<-dat[dat$rsID %in% snps,]
     snp_pos<-dat$pos_hg38
     tad<-tad[tad$chr==max(dat$chr,na.rm=TRUE),]
-    # in_tad<-tad[between(snp_pos,tad$start_position, tad$end_position)]
-    # in_tad <- as.data.frame(in_tad)
     in_tad <- tad[tad$start_position<= snp_pos & tad$end_position>=snp_pos,]
     return(in_tad)
   })
@@ -331,9 +300,6 @@ server <- function(input, output) {
     dat<-dat[dat$rsID %in% snps,]
     snp_pos<-dat$pos_hg38
     lad<-lad[lad$chr==max(dat$chr,na.rm=TRUE),]
-    # in_tad<-tad[between(snp_pos,tad$start_position, tad$end_position)]
-    # in_tad <- as.data.frame(in_tad)
-    #in_lad <- tad[tad$start_position<= snp_pos & tad$end_position>=snp_pos,]
     return(lad)
   })
   
@@ -361,11 +327,6 @@ server <- function(input, output) {
       colnames(etest3)<-c("Source","Tissue","Gene","p")
       return(etest3[etest3$Tissue %in% input$tissue,])
     }
-    # 
-    # etest3<-matrix(etest2,nrow=length(etest), ncol=4,byrow=TRUE)
-    # etest3<-as.data.frame(etest3)
-    # colnames(etest3)<-c("Source","Tissue","Gene","p")
-    # return(etest3[etest3$Tissue %in% input$tissue,])
   })
   
   values <- reactiveValues(tmp_min = 0, tmp_max=999)
@@ -454,10 +415,7 @@ server <- function(input, output) {
   
   output$LDtable1<-renderTable({
     x<-dat()
-    #x<-x[,input$parameters]
-    #x[,c("query_snp_rsid","rsID","pos_hg38","r2",input$parameters)]
     x[,c("rsID",input$parameters)]
-    #return(x[,input$parameters])
   })
   
   output$LDtable2<-renderTable({
@@ -510,123 +468,24 @@ server <- function(input, output) {
     return(genes)
     
   })
-  
-  # output$plot1<-renderPlotly({
-  #   # create plotting without having to search 
-  #   ld<-dat()
-  #   ld<-ld[ld$pos_hg38!="",]
-  #   query_snps<-ld[ld$is_query_snp==1,]
-  #   ld_snps<-ld[ld$is_query_snp==0,]
-  #   
-  #   tad<-in_tad()
-  #   
-  #   total_min<-total_min()
-  #   total_max<-total_max()
-  #   
-  #   genes<-getBM(attributes = c("hgnc_symbol","start_position","end_position"),
-  #                filters=c("chromosomal_region"), values=paste0(max(ld$chr,na.rm = TRUE),":",total_min,":",total_max),mart = ensembl54)
-  #   colnames(genes)<-c("Symbol","Start","End")
-  #   
-  #   ldBlocks<-ggplot(ld)+
-  #     geom_segment(data=ld[ld$is_query_snp==1,],aes(x=as.vector(tapply(ld$pos_hg38, ld$query_snp_rsid, min)),y=1,xend=as.vector(tapply(ld$pos_hg38, ld$query_snp_rsid, max)),yend=1,color=as.factor(query_snp_rsid), size=30, text=paste0("SNP: ",query_snp_rsid)), alpha=0.5)+
-  #     geom_segment(data=genes,aes(x=Start,y=3,xend=End,yend=3,color=Symbol,size=30, text=paste0("Symbol: ",Symbol,"\n", "Start: ",Start,"\n", "End",End)),alpha=0.5)+
-  #     geom_vline(data = query_snps, aes(xintercept=pos_hg38, text=paste0("SNP: ",query_snp_rsid))) +
-  #     #geom_vline(data = ld_snps, aes(xintercept=pos_hg38, alpha=0.1, text=paste0("SNP: ",rsID)), color="grey")+ # add different color from query snps to make more visible?
-  #     annotate("text",x=total_min, y=1.25, label="LD", color="purple", angle=90)+
-  #     annotate("text",x=total_min, y=3.25, label="Genes", color="purple", angle=90)+
-  #     theme(legend.position = "none",axis.text.y=element_blank(),axis.title.y=element_blank(),panel.grid.major = element_blank(),
-  #           panel.grid.minor = element_blank(),
-  #           panel.border = element_blank(),
-  #           panel.background = element_blank()) + 
-  #     xlab("BP") + coord_cartesian(ylim=c(0.75,3.5), xlim = c(total_min-50000, total_max+50000))+
-  #     scale_y_continuous(breaks = c(1,2,3))  
-  #   
-  #   if(nrow(tad)>=1){
-  #     
-  #     ldBlocks<-ldBlocks + 
-  #       geom_segment(data=tad, aes(x=tad$start_position, y=2, xend=tad$end_position, yend=2, size=30, text=paste0("Start: ",start_position,"\n","End",end_position)))+
-  #       annotate("text",x=total_min, y=2.25, label="TADs", color="purple", angle=90)
-  #     
-  #   } else {
-  #     ldBlocks<-ldBlocks
-  #   }
-  #   
-  #   if(nrow(ld_snps)>=1){
-  #     ldBlocks<-ldBlocks + geom_vline(data = ld_snps, aes(xintercept=pos_hg38, alpha=0.1, text=paste0("SNP: ",rsID)), color="grey")
-  #   }else {
-  #     ldBlocks<-ldBlocks
-  #   }
-  #   #return(ldBlocks)
-  #   ggplotly(ldBlocks, tooltip="text") %>% 
-  #     layout(autosize=TRUE)
-  # })
-  
-  ########### Other HIC plots if needed later 
-  # output$hicPlot<-renderPlot({
-  #   data(Dixon2012_IMR90)
-  #   ld<-dat()
-  #   chrX<-max(ld$chr,na.rm=TRUE)
-  #   hic_dat <- extractRegion(hic_imr90_40[[paste0("chr",chrX,"chr",chrX)]],chr=paste0("chr",chrX),
-  #                            from=total_min(), to=total_max())
-  #   hic_matrix<-as.matrix(intdata(hic_dat))
-  #   phic = plotHic(hic_matrix,chrom=paste0("chr",chrX),
-  #           chromstart=min(as.numeric(colnames(hic_matrix))),
-  #           chromend=max(as.numeric(colnames(hic_matrix))),
-  #           max_y = 20,zrange=c(0,28),palette = topo.colors,flip=FALSE)
-  #   labelgenome(chrom=paste0("chr",chrX),chromstart=total_min(),chromend=total_max(),
-  #               side=1,scipen=40,n=1,scale="bp")
-  #   addlegend(phic[[1]],palette=phic[[2]],title="score",side="right",bottominset=0.4,
-  #             topinset=0,xoffset=-.035,labelside="left",width=0.025,title.offset=0.035)
-  #   labelplot(title="Dixon IMR0 HIC",lettercex=4,titlecex=1.5,titlecol="blue",titleadj = 0.5)
-  # })
-  # 
-  # output$hicPlot2<-renderPlot({
-  #   data(Dixon2012_IMR90)
-  #   ld<-dat()
-  #   chrX<-max(ld$chr,na.rm=TRUE)
-  #   hic_dat <- extractRegion(hic_imr90_40[[paste0("chr",chrX,"chr",chrX)]],chr=paste0("chr",chrX),
-  #                            from=total_min(), to=total_max())
-  #   plot(hic_dat, tracks=list(tads_imr90), maxrange=20)
-  # })
-  #
-  # output$ideoPlot <- renderPlot({
-  #   ld<-dat()
-  #   chrX<-max(ld$chr,na.rm=TRUE)
-  #   plotIdeogram(genome = "hg19", subchr = paste0("chr",chrX),
-  #                which = GRanges(seqnames = paste0("chr",chrX),
-  #                                IRanges(start = total_min(),end = total_max())),
-  #                color = "cyan", aspect.ratio = 1/7)
-  # })
-  
-  # output$plotStart<-renderUI({
-  #   numericInput("plotStartBP",label = "Starting Coordinates (BP)", value=total_min())
-  # })
-  # 
-  # output$plotEnd<-renderUI({
-  #   numericInput("plotEndBP",label = "Ending Coordinates (BP)", value=total_max())
-  # })
-  
+   
   output$megaPlot<-renderPlot({
-    #data(Dixon2012_IMR90)
     ld<-dat()
     chrX<-max(ld$chr,na.rm=TRUE)
     
     minBP <- ifelse(values$tmp_min==0,total_min(),values$tmp_min)
     maxBP <- ifelse(values$tmp_max==999,total_max(),values$tmp_max)
     
-    hic_dat <- extractRegion(hic_imr90_40[[paste0("chr",chrX,"chr",chrX)]],chr=paste0("chr",chrX),
+    hic_dat <- extractRegion(hiC[[paste0("chr",chrX,"chr",chrX)]],chr=paste0("chr",chrX),
                              from=minBP, to=maxBP)
     hic_matrix<-as.matrix(intdata(hic_dat))
-    #rm(hic_imr90_40)
     
     genes<-getBM(attributes = c("hgnc_symbol","start_position","end_position"),
                  filters=c("chromosomal_region"), values=paste0(chrX,":",minBP,":",maxBP),mart = ensembl54)
     colnames(genes)<-c("Symbol","Start","End")
     
     tads <- as.data.frame(tads_imr90)
-    #tads <- tads[tads$seqnames==paste0("chr",chrX) & tads$start>=minBP & tads$start<=maxBP,]
 
-    #rm(hic_imr90_40,tads_imr90)
     ###########################################################################################
     
     mat_layout<-matrix(c(1,2,3,4,1,2,3,4),nrow=4,ncol=2)
@@ -660,7 +519,6 @@ server <- function(input, output) {
     
     plot(c(1,1),xlim=c(minBP,maxBP),ylim=c(0,1),type ='n',bty='n',xaxt='n',yaxt='n',ylab="",xlab="",xaxs="i")
     abline(v=ld[ld$is_query_snp==0,]$pos_hg38, col="grey", lend=1) # lwd=6
-    # abline(v=ld[ld$is_query_snp==1,]$pos_hg38,col=colorspace::rainbow_hcl(n=nrow(ld[ld$is_query_snp==1,])), lend=1)
     abline(v=ld[ld$is_query_snp==1,]$pos_hg38,col=ifelse(input$plotColor==1,topo.colors(n=nrow(ld[ld$is_query_snp==1,]),alpha = 0.7),
                                                          ifelse(input$plotColor==2,rainbow(n=nrow(ld[ld$is_query_snp==1,]),alpha = 0.7),
                                                                 ifelse(input$plotColor==3,heat.colors(n=nrow(ld[ld$is_query_snp==1,]),alpha = 0.7),
@@ -668,23 +526,15 @@ server <- function(input, output) {
     mtext("LD",side=2,line=1.75,cex=.75,font=2)
     
     plot(c(1,1),xlim=c(minBP,maxBP),ylim=c(0,1),type ='n',bty='n',xaxt='n',yaxt='n',ylab="",xlab="",xaxs="i")
-    # segments(x0=tads[tads$seqnames==paste0("chr",chrX) & tads$start>=minBP & tads$start<=maxBP,]$start,
-    #          y0=0.5,
-    #          x1=tads[tads$seqnames==paste0("chr",chrX) & tads$start>=minBP & tads$start<=maxBP,]$end,
-    #          y1=0.5, lwd=30,
-    #          col=topo.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX) & tads$start>=minBP & tads$start<=maxBP,])),
-    #          lend=1)
     segments(x0=tads[tads$seqnames==paste0("chr",chrX),]$start,
              y0=0.5,
              x1=tads[tads$seqnames==paste0("chr",chrX),]$end,
              y1=0.5, lwd=30,
-             # col=topo.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX),])),
              col=ifelse(input$plotColor==1,topo.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX),]),alpha = 0.7),
                         ifelse(input$plotColor==2,rainbow(n=nrow(tads[tads$seqnames==paste0("chr",chrX),]),alpha = 0.7),
                                ifelse(input$plotColor==3,heat.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX),]),alpha = 0.7),
                                       ifelse(input$plotColor==4,terrain.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX),]),alpha = 0.7),cm.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX),]),alpha = 0.7))))),
              lend=1)
-    #axis(1, at=c(input$plotStartBP,(input$plotStartBP+input$plotEndBP)/2,input$plotEndBP), labels=c(as.character(input$plotStartBP),as.character((input$plotStartBP+input$plotEndBP)/2,input$plotEndBP))
     mtext("TADs",side=2,line=1.75,cex=.75,font=2)
     
     
@@ -700,7 +550,7 @@ server <- function(input, output) {
       minBP <- ifelse(values$tmp_min==0,total_min(),values$tmp_min)
       maxBP <- ifelse(values$tmp_max==999,total_max(),values$tmp_max)
       
-      hic_dat <- extractRegion(hic_imr90_40[[paste0("chr",chrX,"chr",chrX)]],chr=paste0("chr",chrX),
+      hic_dat <- extractRegion(hiC[[paste0("chr",chrX,"chr",chrX)]],chr=paste0("chr",chrX),
                                from=minBP, to=maxBP)
       hic_matrix<-as.matrix(intdata(hic_dat))
       
@@ -743,7 +593,6 @@ server <- function(input, output) {
       
       plot(c(1,1),xlim=c(minBP,maxBP),ylim=c(0,1),type ='n',bty='n',xaxt='n',yaxt='n',ylab="",xlab="",xaxs="i")
       abline(v=ld[ld$is_query_snp==0,]$pos_hg38, col="grey", lend=1) # lwd=6
-      # abline(v=ld[ld$is_query_snp==1,]$pos_hg38,col=colorspace::rainbow_hcl(n=nrow(ld[ld$is_query_snp==1,])), lend=1)
       abline(v=ld[ld$is_query_snp==1,]$pos_hg38,col=ifelse(input$plotColor==1,topo.colors(n=nrow(ld[ld$is_query_snp==1,]),alpha = 0.7),
                                                            ifelse(input$plotColor==2,rainbow(n=nrow(ld[ld$is_query_snp==1,]),alpha = 0.7),
                                                                   ifelse(input$plotColor==3,heat.colors(n=nrow(ld[ld$is_query_snp==1,]),alpha = 0.7),
@@ -755,7 +604,6 @@ server <- function(input, output) {
                y0=0.5,
                x1=tads[tads$seqnames==paste0("chr",chrX),]$end,
                y1=0.5, lwd=30,
-               # col=topo.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX),])),
                col=ifelse(input$plotColor==1,topo.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX),]),alpha = 0.7),
                           ifelse(input$plotColor==2,rainbow(n=nrow(tads[tads$seqnames==paste0("chr",chrX),]),alpha = 0.7),
                                  ifelse(input$plotColor==3,heat.colors(n=nrow(tads[tads$seqnames==paste0("chr",chrX),]),alpha = 0.7),
