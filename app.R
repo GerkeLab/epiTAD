@@ -10,6 +10,7 @@ library(HiTC)
 library(colorspace)
 
 # Global Data
+ensembl54 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
 load("data/hicData.Rdata")
 
 tad<-fread("data/IMR90_domains_hg19.bed")
@@ -180,8 +181,6 @@ ui <- dashboardPage(dashboardHeader(title="epiTAD"),
 
 ###################################################################################################
 server <- function(input, output) {
-  
-  ensembl54 = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
   
   sample<-eventReactive(input$update1,{
     samplefile<-input$file1
