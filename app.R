@@ -9,6 +9,21 @@ library(Sushi)
 library(HiTC)
 library(colorspace)
 
+# Global Data
+load("data/hicData.Rdata")
+
+tad<-fread("data/IMR90_domains_hg19.bed")
+colnames(tad)<-c("chr","start_position","end_position")
+tad$chr<-gsub("chr","",tad$chr)
+tad$chr<-as.numeric(tad$chr)
+tad<-tad[!is.na(tad$chr),]
+
+lad <- fread("data/human.fibroblast.DamID.hg19.bed")
+colnames(lad)<-c("chr","start","end","dunno")
+lad$chr<-gsub("chr","",lad$chr)
+lad$chr<-as.numeric(lad$chr)
+lad<-lad[!is.na(lad$chr),]
+
 
 ###################################################################################################
 ui <- dashboardPage(dashboardHeader(title="epiTAD"),
@@ -167,7 +182,6 @@ ui <- dashboardPage(dashboardHeader(title="epiTAD"),
 server <- function(input, output) {
   
   ensembl54 = useMart("ensembl", dataset = "hsapiens_gene_ensembl")
-  load(url("https://github.com/tgerke/epiTAD/blob/master/data/hicData.Rdata?raw=true"))
   
   sample<-eventReactive(input$update1,{
     samplefile<-input$file1
@@ -275,11 +289,6 @@ server <- function(input, output) {
   })
   
   in_tad<-eventReactive(input$update1,{
-    tad<-fread("http://compbio.med.harvard.edu/modencode/webpage/hic/IMR90_domains_hg19.bed")
-    colnames(tad)<-c("chr","start_position","end_position")
-    tad$chr<-gsub("chr","",tad$chr)
-    tad$chr<-as.numeric(tad$chr)
-    tad<-tad[!is.na(tad$chr),]
     snps<-snps()
     dat<-dat()
     dat<-dat[dat$rsID %in% snps,]
@@ -290,11 +299,6 @@ server <- function(input, output) {
   })
   
   in_lad<-eventReactive(input$update1,{
-    lad<-fread("http://compbio.med.harvard.edu/modencode/webpage/lad/human.fibroblast.DamID.hg19.bed")
-    colnames(lad)<-c("chr","start","end","dunno")
-    lad$chr<-gsub("chr","",lad$chr)
-    lad$chr<-as.numeric(lad$chr)
-    lad<-lad[!is.na(lad$chr),]
     snps<-snps()
     dat<-dat()
     dat<-dat[dat$rsID %in% snps,]
