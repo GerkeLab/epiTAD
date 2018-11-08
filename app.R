@@ -27,7 +27,8 @@ lad<-lad[!is.na(lad$chr),]
 
 
 ###################################################################################################
-ui <- dashboardPage(dashboardHeader(title="epiTAD"),
+ui <- function(request) {
+	dashboardPage(dashboardHeader(title="epiTAD"),
                     dashboardSidebar(sidebarMenu(id="tabs",
                                                  menuItem("SNPs",tabName = "tab1"),
                                                  menuItem("Info",tabName = "tab2"))),
@@ -43,7 +44,8 @@ ui <- dashboardPage(dashboardHeader(title="epiTAD"),
                                                          'text/comma-separated-values,text/plain', 
                                                          '.csv')),
                                       tags$hr(),
-                                      actionButton("update1", "Perform query")),
+                                      actionButton("update1", "Perform query"),
+                                      bookmarkButton(class = "pull-right")),
                                   tabBox(title="Select Output",
                                          tabPanel("Source",
                                                   selectInput("pop","Population",c("EUR","AFR","AMR","ASN"), selected="EUR"),
@@ -178,9 +180,16 @@ ui <- dashboardPage(dashboardHeader(title="epiTAD"),
                                       ))
                                       ))
                                 )
+}
 
 ###################################################################################################
-server <- function(input, output) {
+server <- function(input, output, session) {
+  # Enable bookmarking button and update URL on bookmark
+  setBookmarkExclude("file1")
+  onBookmarked(function(url) {
+    showModal(urlModal(url, subtitle = "This link stores the current state of epiTAD."))
+    updateQueryString(url)
+  })
   
   sample<-eventReactive(input$update1,{
     samplefile<-input$file1
@@ -632,5 +641,5 @@ server <- function(input, output) {
 
 
 ################################################################################################### 
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, enableBookmarking = "url")
 
