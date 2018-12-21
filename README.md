@@ -1,5 +1,5 @@
 # epiTAD
-epiTAD is a shiny app for visualizing Hi-C data and comparing genomic annotations from multiple public databases to facilitate *in silico* discovery. The applicaiton can be accessed at [https://apps.gerkelab.com/epiTAD/](https://apps.gerkelab.com/epiTAD/).
+epiTAD is a shiny app for visualizing Hi-C data and comparing genomic annotations from multiple public databases to facilitate *in silico* discovery. The application can be accessed at [https://apps.gerkelab.com/epiTAD/](https://apps.gerkelab.com/epiTAD/).
 
 ## Key Operations 
 
