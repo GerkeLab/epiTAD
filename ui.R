@@ -13,7 +13,7 @@ function(request) {
           fluidRow(
             box(
               title = "Query SNPs",
-              textInput("snpList", "Enter SNP rsIDs (comma separated)", value = ""),
+              textInput("snpList", "Enter SNP rsIDs (comma separated)", value = "", placeholder = "rs123, rs5574"),
               h5(helpText("Upload SNP List (one SNP per line)")),
               fileInput("file1", "Choose a file",
                 accept = c(
