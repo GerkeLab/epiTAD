@@ -94,7 +94,7 @@ function(input, output, session) {
     etest3 <- as.data.frame(etest3)
     etest3 <- etest3[!duplicated(etest3$V2), ]
     opt <- etest3$V2
-    checkboxGroupInput("tissue", "Tissues", choices = opt, inline = TRUE)
+    checkboxGroupInput("tissue", "Tissues", choices = opt, selected = opt, inline = TRUE)
   })
 
   dat2 <- eventReactive(input$update1, {
