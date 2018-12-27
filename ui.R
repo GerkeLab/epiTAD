@@ -2,7 +2,7 @@
 # UI Options --------------------------------------------------------------
 
 # Set default color and type for shinycssloaders::w
-options(spinner.type = 6, spinner.color = "#357CA5")
+options(spinner.type = 7, spinner.color = "#357CA5")
 
 INPUT_CHOICES <- list(
   population = c("EUR", "AFR", "AMR", "ASN"),
@@ -173,15 +173,15 @@ function(request) {
               title = "Variant Annotation",
               tabPanel(
                 "HaploReg",
-                withSpinner(DT::dataTableOutput("LDtable1"))
+                withSpinner(DT::dataTableOutput("LDtable1"), proxy.height = "100px")
               ),
               tabPanel(
                 "RegulomeDB",
-                withSpinner(DT::dataTableOutput("LDtable2"))
+                withSpinner(DT::dataTableOutput("LDtable2"), proxy.height = "100px")
               ),
               tabPanel(
                 "TADs",
-                withSpinner(textOutput("tadBoundaries")),
+                withSpinner(textOutput("tadBoundaries"), proxy.height = "100px"),
                 uiOutput("hic1")
               )
             ),
@@ -190,11 +190,11 @@ function(request) {
               tabPanel(
                 "ENSEMBL",
                 h5(helpText("Genes spanned by the greater of the LD or TAD region")),
-                withSpinner(DT::dataTableOutput("geneTable"))
+                withSpinner(DT::dataTableOutput("geneTable"), proxy.height = "100px")
               ),
               tabPanel(
                 "Oncotator",
-                withSpinner(DT::dataTableOutput("oncoTable"))
+                withSpinner(DT::dataTableOutput("oncoTable"), proxy.height = "100px")
               ),
               tabPanel(
                 "eQTL",
