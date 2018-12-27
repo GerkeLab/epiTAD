@@ -387,10 +387,11 @@ function(input, output, session) {
     total_max <- total_max()
 
     x <- fromJSON(paste0("http://portals.broadinstitute.org/oncotator/genes/", chr, "_", total_min, "_", total_max, "/"))
+    shiny::validate(need(length(x) > 0, "Oncotator did not return valid results"))
 
     genes <- as.data.frame(x[[1]])
 
-    for (i in 2:length(x)) {
+    for (i in seq_along(x)[-1]) {
       gene_dat <- as.data.frame(x[[i]])
       genes <- rbind(genes, gene_dat)
     }
