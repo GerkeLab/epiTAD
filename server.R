@@ -266,7 +266,7 @@ function(input, output, session) {
     etest3 <- as.data.frame(etest3)
     colnames(etest3) <- c("Source", "Tissue", "Gene", "p")
     epitad_datatable(etest3[etest3$Tissue %in% input$tissue, ])
-  })
+  }, server = FALSE)
 
   values <- reactiveValues(tmp_min = 0, tmp_max = 999)
 
@@ -360,12 +360,12 @@ function(input, output, session) {
   output$LDtable1 <- DT::renderDataTable({
     x <- dat()
     epitad_datatable(x[, c("rsID", input$parameters)])
-  })
+  }, server = FALSE)
 
   output$LDtable2 <- DT::renderDataTable({
     x <- dat2()
     epitad_datatable(x[, c("rsid", input$parameters2)])
-  })
+  }, server = FALSE)
 
   output$geneTable <- DT::renderDataTable({
     ld <- dat()
@@ -378,26 +378,7 @@ function(input, output, session) {
       filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
     )
     epitad_datatable(genes)
-  })
-
-  output$geneDownload <- downloadHandler(
-    filename = function() {
-      paste("geneList", ".csv", sep = "")
-    },
-    content = function(file) {
-      ld <- dat()
-      chr <- max(as.numeric(ld$chr), na.rm = TRUE)
-      total_min <- total_min()
-      total_max <- total_max()
-
-      genes <- getBM(
-        attributes = c("hgnc_symbol", "start_position", "end_position"),
-        filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
-      )
-
-      write.csv(genes, file)
-    }
-  )
+  }, server = FALSE)
 
   output$oncoTable <- DT::renderDataTable({
     ld <- dat()
@@ -417,7 +398,7 @@ function(input, output, session) {
     genes <- genes[, c("gene", input$oncoParameters1, input$oncoParameters2, input$oncoParameters3, input$oncoParameters4),
                    drop = FALSE]
     epitad_datatable(genes)
-  })
+  }, server = FALSE)
 
   output$megaPlot <- renderPlot({
     ld <- dat()

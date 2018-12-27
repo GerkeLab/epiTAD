@@ -190,8 +190,7 @@ function(request) {
               tabPanel(
                 "ENSEMBL",
                 h5(helpText("Genes spanned by the greater of the LD or TAD region")),
-                withSpinner(DT::dataTableOutput("geneTable")),
-                downloadButton("geneDownload", "Download")
+                withSpinner(DT::dataTableOutput("geneTable"))
               ),
               tabPanel(
                 "Oncotator",
