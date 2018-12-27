@@ -1,8 +1,30 @@
 
 # UI Options --------------------------------------------------------------
 
-# Set default color and type for shinycssloaders::w
+# Set default color and type for shinycssloaders
 options(spinner.type = 7, spinner.color = "#357CA5")
+
+example_url <- function(x) {
+  has_tooltip <- !is.null(x$tooltip)
+
+  if (has_tooltip) {
+    if (!is.null(x$input_id)) {
+      tags$li(actionLink(x$input_id, x$text), class = "dropdown-item",
+              "data-toggle" = "tooltip", "data-placement" = "right",
+              title = x$tooltip)
+    } else {
+      tags$li(tags$a(href = x$url, x$text), class = "dropdown-item",
+              "data-toggle" = "tooltip", "data-placement" = "right",
+              title = x$tooltip)
+    }
+  } else {
+    if (!is.null(x$input_id)) {
+      tags$li(actionLink(x$input_id, x$text), class = "dropdown-item")
+    } else {
+      tags$li(tags$a(href = x$url, x$text), class = "dropdown-item")
+    }
+  }
+}
 
 INPUT_CHOICES <- list(
   population = c("EUR", "AFR", "AMR", "ASN"),
@@ -121,6 +143,15 @@ function(request) {
       menuItem("Info", tabName = "tab2")
     )),
     dashboardBody(
+      tags$head(
+        tags$style(
+          HTML(
+            ".box-shadow {
+            box-shadow: 0 1px 3px rgba(0,0,0,.25);
+            -webkit-box-shadow: 0 1px 3px rgba(0,0,0,.25);"
+          )
+        )
+      ),
       tabItems(
         tabItem(
           tabName = "tab1",
@@ -137,8 +168,30 @@ function(request) {
                 )
               ),
               tags$hr(),
-              actionButton("update1", "Perform query"),
-              bookmarkButton(class = "pull-right")
+              tags$div(
+                class = "btn-toolbar",
+                actionButton("update1", "Perform query", class = "btn-primary", style = "color: #FFFFFF"),
+                tags$div(
+                  class = "btn-group dropup",
+                  tags$button(
+                    class = "btn btn-default dropdown-toggle",
+                    role = "button",
+                    id = "exampleDropdownMenu",
+                    "data-toggle" = "dropdown",
+                    "aria-haspopup" = "true",
+                    "aria-expanded" = "false",
+                    "Example Queries", tags$span(class = "caret")
+                  ),
+                  tags$ul(
+                    class = "dropdown-menu box-shadow",
+                    "aria-labelledby" = "exampleDropdownMenu",
+                    example_url(EXAMPLES$ancestry),
+                    example_url(EXAMPLES$`8q24`),
+                    example_url(EXAMPLES$protective)
+                  )
+                ),
+                bookmarkButton(class = "pull-right")
+              )
             ),
             tabBox(
               title = "Select Output",
