@@ -1,6 +1,9 @@
 
 # UI Options --------------------------------------------------------------
 
+# Set default color and type for shinycssloaders::w
+options(spinner.type = 6, spinner.color = "#357CA5")
+
 INPUT_CHOICES <- list(
   population = c("EUR", "AFR", "AMR", "ASN"),
   HaploR = c(
@@ -171,15 +174,15 @@ function(request) {
               title = "Variant Annotation",
               tabPanel(
                 "HaploReg",
-                withSpinner(tableOutput("LDtable1"), color = "#00ffff", type = 6)
+                withSpinner(tableOutput("LDtable1"))
               ),
               tabPanel(
                 "RegulomeDB",
-                withSpinner(tableOutput("LDtable2"), color = "#00ffff", type = 6)
+                withSpinner(tableOutput("LDtable2"))
               ),
               tabPanel(
                 "TADs",
-                withSpinner(textOutput("tadBoundaries"), color = "#00ffff", type = 6),
+                withSpinner(textOutput("tadBoundaries")),
                 uiOutput("hic1")
               )
             ),
@@ -188,12 +191,12 @@ function(request) {
               tabPanel(
                 "ENSEMBL",
                 h5(helpText("Genes spanned by the greater of the LD or TAD region")),
-                withSpinner(tableOutput("geneTable"), color = "#00ffff", type = 6),
+                withSpinner(tableOutput("geneTable")),
                 downloadButton("geneDownload", "Download")
               ),
               tabPanel(
                 "Oncotator",
-                withSpinner(tableOutput("oncoTable"), color = "#00ffff", type = 6)
+                withSpinner(tableOutput("oncoTable"))
               ),
               tabPanel(
                 "eQTL",
@@ -212,7 +215,7 @@ function(request) {
                 ),
                 tabPanel(
                   "Figure",
-                  withSpinner(plotOutput("megaPlot", height = "450px"), color = "#00ffff", type = 6),
+                  withSpinner(plotOutput("megaPlot", height = "450px")),
                   h5(helpText("Coordinates must be at least 200000 BP apart")),
                   uiOutput("plotStart"),
                   uiOutput("plotEnd"),
