@@ -157,7 +157,6 @@ function(request) {
               ),
               tabPanel(
                 "eQTL",
-                h5(helpText("If no eQTLs, this section will be empty")),
                 uiOutput("eTissues")
               ),
               tabPanel(
@@ -200,7 +199,10 @@ function(request) {
               ),
               tabPanel(
                 "eQTL",
-                DT::dataTableOutput("eTable1"),
+                tags$div(
+                  style = "min-height: 1.5em",
+                  DT::dataTableOutput("eTable1")
+                ),
                 uiOutput("eqtl1")
               )
             ),

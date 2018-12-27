@@ -89,15 +89,12 @@ function(input, output, session) {
     etest <- unlist(strsplit(as.character(dat$eQTL), ";"))
     etest <- etest[!etest %in% c(".")]
     etest2 <- unlist(strsplit(etest, ","))
-    if (is.null(etest2)) {
-      return(verbatimTextOutput("No Tissues to Show"))
-    } else {
-      etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
-      etest3 <- as.data.frame(etest3)
-      etest3 <- etest3[!duplicated(etest3$V2), ]
-      opt <- etest3$V2
-      return(checkboxGroupInput("tissue", "Tissues", choices = opt, inline = TRUE))
-    }
+    shiny::validate(need(etest2, "No statistically significant eQTLs were reported with these SNPs."))
+    etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
+    etest3 <- as.data.frame(etest3)
+    etest3 <- etest3[!duplicated(etest3$V2), ]
+    opt <- etest3$V2
+    checkboxGroupInput("tissue", "Tissues", choices = opt, inline = TRUE)
   })
 
   dat2 <- eventReactive(input$update1, {
@@ -259,19 +256,16 @@ function(input, output, session) {
     etest <- unlist(strsplit(as.character(dat$eQTL), ";"))
     etest <- etest[!etest %in% c(".")]
     etest2 <- unlist(strsplit(etest, ","))
-    if (is.null(etest2)) {
-      Source <- NA
-      Tissue <- NA
-      Gene <- NA
-      p <- NA
-      empty_dat <- as.data.frame(cbind(Source, Tissue, Gene, p))
-      return(empty_dat)
-    } else {
-      etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
-      etest3 <- as.data.frame(etest3)
-      colnames(etest3) <- c("Source", "Tissue", "Gene", "p")
-      epitad_datatable(etest3[etest3$Tissue %in% input$tissue, ])
-    }
+
+    # Check inputs and that there are eQTLs for these SNPs
+    shiny::validate(need(etest2, "No statistically significant eQTLs were reported with these SNPs."))
+    shiny::validate(need(input$tissue, "Please select desired Tissues from the eQTL tab in the 'Select Output' box."))
+
+    # Return table
+    etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
+    etest3 <- as.data.frame(etest3)
+    colnames(etest3) <- c("Source", "Tissue", "Gene", "p")
+    epitad_datatable(etest3[etest3$Tissue %in% input$tissue, ])
   })
 
   values <- reactiveValues(tmp_min = 0, tmp_max = 999)
@@ -353,11 +347,12 @@ function(input, output, session) {
     y <- dat()
     total_min <- total_min()
     total_max <- total_max()
-    if (length(x) > 1) {
+    link <- if (length(x) > 1) {
       a("Take me to GTEx", href = paste0("https://www.gtexportal.org/home/browseEqtls?location=chr", max(as.numeric(y$chr), na.rm = TRUE), ":", total_min, "-", total_max), target = "_blank")
     } else if (length(x) == 1) {
       a("Take me to GTEx", href = paste0("https://www.gtexportal.org/home/snp/", x), target = "_blank")
     }
+    tagList(tags$p(link))
   })
 
 
