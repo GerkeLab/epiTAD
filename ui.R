@@ -174,11 +174,11 @@ function(request) {
               title = "Variant Annotation",
               tabPanel(
                 "HaploReg",
-                withSpinner(tableOutput("LDtable1"))
+                withSpinner(DT::dataTableOutput("LDtable1"))
               ),
               tabPanel(
                 "RegulomeDB",
-                withSpinner(tableOutput("LDtable2"))
+                withSpinner(DT::dataTableOutput("LDtable2"))
               ),
               tabPanel(
                 "TADs",
@@ -191,16 +191,16 @@ function(request) {
               tabPanel(
                 "ENSEMBL",
                 h5(helpText("Genes spanned by the greater of the LD or TAD region")),
-                withSpinner(tableOutput("geneTable")),
+                withSpinner(DT::dataTableOutput("geneTable")),
                 downloadButton("geneDownload", "Download")
               ),
               tabPanel(
                 "Oncotator",
-                withSpinner(tableOutput("oncoTable"))
+                withSpinner(DT::dataTableOutput("oncoTable"))
               ),
               tabPanel(
                 "eQTL",
-                tableOutput("eTable1"),
+                DT::dataTableOutput("eTable1"),
                 uiOutput("eqtl1")
               )
             ),

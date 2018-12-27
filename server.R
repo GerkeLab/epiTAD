@@ -1,5 +1,34 @@
 SNP_QUERY_ERROR <- "The queried SNP may not be valid. Please check your input."
 
+epitad_datatable <- function(
+  x,
+  ...,
+  filter = "top",
+  rownames = FALSE,
+  style = "bootstrap",
+  autoHideNavigation = TRUE,
+  selection = "none",
+  extensions = "Buttons",
+  options = list(
+    dom = "t<'row'<'col-sm-4'B><'col-sm-8'p>>",
+    buttons = c('copy', 'csv', 'print'),
+    pageLength = 10
+  )
+) {
+  # Worst case scenario, return nothing (just in case)
+  if (!inherits(x, "data.frame") || !nrow(x)) return(NULL)
+
+  DT::datatable(x, ...,
+                filter = filter,
+                rownames = rownames,
+                style = style,
+                autoHideNavigation = TRUE,
+                selection = selection,
+                extensions = extensions,
+                options = options
+  )
+}
+
 function(input, output, session) {
   # Enable bookmarking button and update URL on bookmark
   setBookmarkExclude("file1")
@@ -7,6 +36,8 @@ function(input, output, session) {
     showModal(urlModal(url, subtitle = "This link stores the current state of epiTAD."))
     updateQueryString(url)
   })
+
+  DT:::DT2BSClass(c("stipe", "hover", "compact", "cell-border"))
 
   sample <- eventReactive(input$update1, {
     samplefile <- input$file1
@@ -223,7 +254,7 @@ function(input, output, session) {
     }
   })
 
-  output$eTable1 <- renderTable({
+  output$eTable1 <- DT::renderDataTable({
     dat <- dat()
     etest <- unlist(strsplit(as.character(dat$eQTL), ";"))
     etest <- etest[!etest %in% c(".")]
@@ -239,7 +270,7 @@ function(input, output, session) {
       etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
       etest3 <- as.data.frame(etest3)
       colnames(etest3) <- c("Source", "Tissue", "Gene", "p")
-      return(etest3[etest3$Tissue %in% input$tissue, ])
+      epitad_datatable(etest3[etest3$Tissue %in% input$tissue, ])
     }
   })
 
@@ -331,17 +362,17 @@ function(input, output, session) {
 
 
 
-  output$LDtable1 <- renderTable({
+  output$LDtable1 <- DT::renderDataTable({
     x <- dat()
-    x[, c("rsID", input$parameters)]
+    epitad_datatable(x[, c("rsID", input$parameters)])
   })
 
-  output$LDtable2 <- renderTable({
+  output$LDtable2 <- DT::renderDataTable({
     x <- dat2()
-    x[, c("rsid", input$parameters2)]
+    epitad_datatable(x[, c("rsid", input$parameters2)])
   })
 
-  output$geneTable <- renderTable({
+  output$geneTable <- DT::renderDataTable({
     ld <- dat()
     chr <- max(ld$chr, na.rm = TRUE)
     total_min <- total_min()
@@ -351,7 +382,7 @@ function(input, output, session) {
       attributes = c("hgnc_symbol", "start_position", "end_position"),
       filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
     )
-    return(genes)
+    epitad_datatable(genes)
   })
 
   output$geneDownload <- downloadHandler(
@@ -373,7 +404,7 @@ function(input, output, session) {
     }
   )
 
-  output$oncoTable <- renderTable({
+  output$oncoTable <- DT::renderDataTable({
     ld <- dat()
     chr <- max(as.numeric(ld$chr), na.rm = TRUE)
     total_min <- total_min()
@@ -388,8 +419,9 @@ function(input, output, session) {
       genes <- rbind(genes, gene_dat)
     }
 
-    genes <- genes[, c("gene", input$oncoParameters1, input$oncoParameters2, input$oncoParameters3, input$oncoParameters4)]
-    return(genes)
+    genes <- genes[, c("gene", input$oncoParameters1, input$oncoParameters2, input$oncoParameters3, input$oncoParameters4),
+                   drop = FALSE]
+    epitad_datatable(genes)
   })
 
   output$megaPlot <- renderPlot({
