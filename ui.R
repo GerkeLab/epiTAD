@@ -185,6 +185,7 @@ function(request) {
                   tags$ul(
                     class = "dropdown-menu box-shadow",
                     "aria-labelledby" = "exampleDropdownMenu",
+                    tags$li("A selection of SNPs that are...", class = "dropdown-header"),
                     example_url(EXAMPLES$ancestry),
                     example_url(EXAMPLES$`8q24`),
                     example_url(EXAMPLES$protective)
