@@ -1,3 +1,5 @@
+SNP_QUERY_ERROR <- "The queried SNP may not be valid. Please check your input."
+
 function(input, output, session) {
   # Enable bookmarking button and update URL on bookmark
   setBookmarkExclude("file1")
@@ -14,21 +16,41 @@ function(input, output, session) {
     sample1 <- read.table(file = samplefile$datapath, sep = "\t", header = FALSE, stringsAsFactors = FALSE)
   })
 
+  safely <- function(.f, error_msg = NULL, quiet = FALSE) {
+    function(...) {
+      tryCatch(
+        list(result = .f(...), error = NULL),
+        error = function(e) {
+          if (!quiet)
+            message("Error: ", e$message)
+
+          list(result = NULL, error = if (is.null(error_msg)) e$message else error_msg)
+        },
+        interrupt = function(e) {
+          stop("Terminated by user", call. = FALSE)
+        }
+      )
+    }
+  }
+
+  safe_queryHaploreg <- safely(queryHaploreg)
+
   dat <- eventReactive(input$update1, {
     if (input$snpList == "") {
       dat <- sample()
       snps <- dat[, 1]
-      x <- queryHaploreg(query = snps, ldThresh = as.numeric(input$value), ldPop = input$pop)
-      return(x)
-    }
-    if (input$snpList != "") {
+      x <- safe_queryHaploreg(query = snps, ldThresh = as.numeric(input$value), ldPop = input$pop)
+    } else {
       snps <- as.character(unlist(strsplit(input$snpList, ",")))
       snps <- trimws(snps)
-      x <- queryHaploreg(query = snps, ldThresh = input$value, ldPop = input$pop)
-      x$chr <- as.numeric(as.character(x$chr))
-      x$pos_hg38 <- as.numeric(as.character(x$pos_hg38))
-      return(x)
+      x <- safe_queryHaploreg(query = snps, ldThresh = input$value, ldPop = input$pop)
+      if (is.null(x$error)) {
+        x$chr <- as.numeric(as.character(x$chr))
+        x$pos_hg38 <- as.numeric(as.character(x$pos_hg38))
+      }
     }
+    shiny::validate(need(is.null(x$error), SNP_QUERY_ERROR))
+    if (is.null(x$error)) x$result
   })
 
   output$eTissues <- renderUI({
@@ -105,6 +127,7 @@ function(input, output, session) {
       snps <- as.character(unlist(strsplit(input$snpList, ",")))
       snps <- trimws(snps)
       x <- queryRegulome(query = snps)
+      shiny::validate(need(nrow(x$res.table) > 0, SNP_QUERY_ERROR))
       x <- as.data.frame(x$res.table)
       x$score <- as.character(x$score)
       x$score_anno <- NA
