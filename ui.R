@@ -273,7 +273,7 @@ function(request) {
                     class = "panel-heading", role = "tab", id = "plot-controls-heading",
                     tags$h5(
                       class = "panel-title",
-                      tags$a("Plot Controls", href = "#plot-controls-body",
+                      tags$a("Plot Options", href = "#plot-controls-body",
                              class = "collapsed", role = "button",
                              "data-toggle" = "collapse", "data-parent" = "#plot-controls",
                              "aria-expanded" = "false", "aria-controls" = "plot-controls-body")
