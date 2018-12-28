@@ -320,9 +320,9 @@ function(input, output, session) {
     total_min <- total_min()
     total_max <- total_max()
     if (length(x) > 1) {
-      a("Take me to HIC Browser", href = paste0("http://promoter.bx.psu.edu/hi-c/view.php?species=human&assembly=hg19&source=inside&tissue=GM12878&type=Lieberman-raw&c_url=&transfer=&chr=chr", max(as.numeric(y$chr), na.rm = TRUE), "&start=", total_min, "&end=", total_max, "&sessionID=&browser=none"), target = "_blank")
+      a("Yue Lab HIC Browser for selected region", href = paste0("http://promoter.bx.psu.edu/hi-c/view.php?species=human&assembly=hg19&source=inside&tissue=GM12878&type=Lieberman-raw&c_url=&transfer=&chr=chr", max(as.numeric(y$chr), na.rm = TRUE), "&start=", total_min, "&end=", total_max, "&sessionID=&browser=none"), target = "_blank")
     } else if (length(x) == 1) {
-      a("Take me to HIC Browser", href = paste0("http://promoter.bx.psu.edu/hi-c/view.php?species=human&assembly=hg19&source=inside&tissue=GM12878&type=Lieberman-raw&resolution=25&c_url=&transfer=&gene=", x, "&sessionID=&browser=none"), target = "_blank")
+      a("Yue Lab HIC Browser for SNP", href = paste0("http://promoter.bx.psu.edu/hi-c/view.php?species=human&assembly=hg19&source=inside&tissue=GM12878&type=Lieberman-raw&resolution=25&c_url=&transfer=&gene=", x, "&sessionID=&browser=none"), target = "_blank")
     }
   })
 
@@ -331,7 +331,7 @@ function(input, output, session) {
     y <- dat()
     total_min <- total_min()
     total_max <- total_max()
-    a("Take me to ClinVar", href = paste0("https://www.ncbi.nlm.nih.gov/clinvar/?term=", max(as.numeric(y$chr), na.rm = TRUE), "%5Bchr%5D+AND+", total_min, "%3A", total_max, "%5Bchrpos37%5D"), target = "_blank")
+    a("NCDB ClinVar for selected region", href = paste0("https://www.ncbi.nlm.nih.gov/clinvar/?term=", max(as.numeric(y$chr), na.rm = TRUE), "%5Bchr%5D+AND+", total_min, "%3A", total_max, "%5Bchrpos37%5D"), target = "_blank")
   })
 
   output$ucsc1 <- renderUI({
@@ -339,7 +339,7 @@ function(input, output, session) {
     y <- dat()
     total_min <- total_min()
     total_max <- total_max()
-    a("Take me to Genome Browser", href = paste0("https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr", max(as.numeric(y$chr), na.rm = TRUE), "%3A", total_min, "%2D", total_max, "&hgsid=598506407_cis2LZUJLabCsy1N2YPEuJv8vbBZ"), target = "_blank")
+    a("UCSC Genome Browser for selected region", href = paste0("https://genome.ucsc.edu/cgi-bin/hgTracks?db=hg38&lastVirtModeType=default&lastVirtModeExtraState=&virtModeType=default&virtMode=0&nonVirtPosition=&position=chr", max(as.numeric(y$chr), na.rm = TRUE), "%3A", total_min, "%2D", total_max, "&hgsid=598506407_cis2LZUJLabCsy1N2YPEuJv8vbBZ"), target = "_blank")
   })
 
   output$eqtl1 <- renderUI({
@@ -348,9 +348,9 @@ function(input, output, session) {
     total_min <- total_min()
     total_max <- total_max()
     link <- if (length(x) > 1) {
-      a("Take me to GTEx", href = paste0("https://www.gtexportal.org/home/browseEqtls?location=chr", max(as.numeric(y$chr), na.rm = TRUE), ":", total_min, "-", total_max), target = "_blank")
+      a("GTEx eQTL browser for selected region", href = paste0("https://www.gtexportal.org/home/browseEqtls?location=chr", max(as.numeric(y$chr), na.rm = TRUE), ":", total_min, "-", total_max), target = "_blank")
     } else if (length(x) == 1) {
-      a("Take me to GTEx", href = paste0("https://www.gtexportal.org/home/snp/", x), target = "_blank")
+      a("GTEx eQTL browser for SNP", href = paste0("https://www.gtexportal.org/home/snp/", x), target = "_blank")
     }
     tagList(tags$p(link))
   })
