@@ -207,7 +207,7 @@ function(request) {
               ),
               tabPanel(
                 "RegulomeDB",
-                checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate", "hits", "score_anno"))
+                checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate","score_anno"))
               ),
               tabPanel(
                 "eQTL",
