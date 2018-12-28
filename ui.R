@@ -207,7 +207,7 @@ function(request) {
               ),
               tabPanel(
                 "RegulomeDB",
-                checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate","score_anno"))
+                checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate", "score_anno"))
               ),
               tabPanel(
                 "eQTL",
@@ -296,27 +296,35 @@ function(request) {
           fluidRow(
             box(
               title = "App Details",
-              h5(helpText("LD is calculated from 1000 Genomes Phase 1 (http://www.internationalgenome.org), and queried from the HaploR (https://cran.r-project.org/web/packages/haploR/index.html) interface to HaploReg (http://archive.broadinstitute.org/mammals/haploreg/haploreg.php).
-                           For TAD visualization check out the Yue Lab (http://promoter.bx.psu.edu/hi-c/).
-                           TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'."))
-            ),
+              p("LD is calculated from ",a("1000 Genomes Phase 1",href="http://www.internationalgenome.org"),
+                " and queried from the ",a("HaploR",href="https://cran.r-project.org/web/packages/haploR/index.html"),
+                " interface to ",a("HaploReg.",href="http://archive.broadinstitute.org/mammals/haploreg/haploreg.php"),
+                "TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'.")
+
+              ),
             box(
               title = "Development Team",
-              h5(helpText("Programming: Jordan Creed, Garrick Aden-Buie and Travis Gerke")),
-              h5(helpText("Scientific Input: Alvaro Monteiro")),
-              h5(helpText("Website: http://travisgerke.com"))
+              p("Programming: Jordan Creed, Garrick Aden-Buie and Travis Gerke"),
+              p("Scientific Input: Alvaro Monteiro"),
+              a("Gerke Lab Website",href="https://www.gerkelab.com")
             ),
             box(
               title = "Other resources",
-              a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")
+              a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank"),
+              br(),
+              a("Yue Lab 3D Genome Browser", href = "http://promoter.bx.psu.edu"),
+              br(),
+              a("CHiCP", href="https://www.chicp.org"),
+              br(),
+              a("HiGlass", href="http://gehlenborglab.org/research/projects/higlass/")
             )
           ),
           fluidRow(
             box(
               title = "Notes",
-              h5(helpText("If no SNPs are in LD above the specified threshold then a range of 53500 BP is applied to either side of the SNP.
-                           If SNPs in LD exist, then the range is set to the smallest region which covers of all genomic locations in LD with the queried SNP(s) and the TAD region.
-                           This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser."))
+              p("If no SNPs are in LD above the specified threshold then a range of 53500 BP is applied to either side of the SNP.
+                 If SNPs in LD exist, then the range is set to the smallest region which covers of all genomic locations in LD with the queried SNP(s) and the TAD region.
+                 This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser.")
             )
           )
         )
