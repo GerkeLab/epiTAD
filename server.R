@@ -608,4 +608,38 @@ function(input, output, session) {
   output$plotEnd <- renderUI({
     numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = total_max())
   })
+
+  observeEvent(input$btn_info, {
+    modal_ui <- tagList(
+        tags$h4("App Details"),
+        tags$p(
+          "LD is calculated from",
+          tags$a("1000 Genomes Phase 1", href="http://www.internationalgenome.org"),
+          "and queried from the",
+          tags$a("HaploR interface", href = "https://cran.r-project.org/web/packages/haploR/index.html"),
+          "to",
+          tags$a("HaploReg", href = "http://archive.broadinstitute.org/mammals/haploreg/haploreg.php"),
+          "For TAD visualization visit the",
+          tags$a("Yue Lab.", href = "http://promoter.bx.psu.edu/hi-c/"),
+          "TAD locations are based off of those defined by Dixon et al in",
+          "\"Topological domains in mammalian genomes identified by analysis of chromatin interactions\"."
+        ),
+        tags$h4("Development Team"),
+        tags$p(
+          tags$strong("Programming:"), "Jordan Creed, Garrick Aden-Buie and Travis Gerke", tags$br(),
+          tags$strong("Scientific Input:"), "Alvaro Monteiro", tags$br(),
+          tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD")
+        ),
+        tags$h4("Other resources"),
+        tags$p(a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")),
+      tags$h4("Notes"),
+      tags$p(
+        "If no SNPs are in LD above the specified threshold then a range of 53500 BP is applied to",
+        "either side of the SNP. If SNPs in LD exist, then the range is set to the smallest region",
+        "which covers of all genomic locations in LD with the queried SNP(s) and the TAD region.",
+        "This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser.")
+    )
+
+    showModal(modalDialog(title = "App Information", modal_ui, footer = modalButton("OK")))
+  })
 }

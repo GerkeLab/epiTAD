@@ -137,11 +137,7 @@ INPUT_CHOICES <- list(
 function(request) {
   dashboardPage(
     dashboardHeader(title = "epiTAD"),
-    dashboardSidebar(sidebarMenu(
-      id = "tabs",
-      menuItem("SNPs", tabName = "tab1"),
-      menuItem("Info", tabName = "tab2")
-    )),
+    dashboardSidebar(disable = TRUE),
     dashboardBody(
       tags$head(
         tags$style(
@@ -152,173 +148,144 @@ function(request) {
           )
         )
       ),
-      tabItems(
-        tabItem(
-          tabName = "tab1",
-          fluidRow(
-            box(
-              title = "Query SNPs",
-              textInput("snpList", "Enter SNP rsIDs (comma separated)", value = "", placeholder = "rs123, rs5574"),
-              h5(helpText("Upload SNP List (one SNP per line)")),
-              fileInput("file1", "Choose a file",
-                accept = c(
-                  "text/csv",
-                  "text/comma-separated-values,text/plain",
-                  ".csv"
-                )
-              ),
-              tags$hr(),
-              tags$div(
-                class = "btn-toolbar",
-                actionButton("update1", "Perform query", class = "btn-primary", style = "color: #FFFFFF"),
-                tags$div(
-                  class = "btn-group dropup",
-                  tags$button(
-                    class = "btn btn-default dropdown-toggle",
-                    role = "button",
-                    id = "exampleDropdownMenu",
-                    "data-toggle" = "dropdown",
-                    "aria-haspopup" = "true",
-                    "aria-expanded" = "false",
-                    "Example Queries", tags$span(class = "caret")
-                  ),
-                  tags$ul(
-                    class = "dropdown-menu box-shadow",
-                    "aria-labelledby" = "exampleDropdownMenu",
-                    tags$li("A selection of SNPs that are...", class = "dropdown-header"),
-                    example_url(EXAMPLES$ancestry),
-                    example_url(EXAMPLES$`8q24`),
-                    example_url(EXAMPLES$protective)
-                  )
-                ),
-                bookmarkButton(class = "pull-right")
-              )
-            ),
-            tabBox(
-              title = "Select Output",
-              tabPanel(
-                "Source",
-                selectInput("pop", "Population", INPUT_CHOICES$population, selected = "EUR"),
-                sliderInput("value", "LD threshold", min = 0, max = 1, value = 0.8)
-              ),
-              tabPanel(
-                "HaploReg",
-                checkboxGroupInput("parameters", "HaploR", INPUT_CHOICES$HaploR, inline = TRUE, selected = c("query_snp_rsid", "pos_hg38", "r2"))
-              ),
-              tabPanel(
-                "RegulomeDB",
-                checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate","score_anno"))
-              ),
-              tabPanel(
-                "eQTL",
-                uiOutput("eTissues")
-              ),
-              tabPanel(
-                "Oncotator",
-                checkboxGroupInput("oncoParameters1", "General", INPUT_CHOICES$onco$general, inline = TRUE),
-                checkboxGroupInput("oncoParameters2", "Cancer Gene Census", INPUT_CHOICES$onco$cancer_gene_census, inline = TRUE),
-                checkboxGroupInput("oncoParameters3", "HUGO Gene Nomenclature Committee", INPUT_CHOICES$onco$hugo_gene_nomenclature, inline = TRUE),
-                checkboxGroupInput("oncoParameters4", "UniProt", INPUT_CHOICES$onco$uniprot, inline = TRUE)
-              )
-            )
+      fluidRow(
+        box(
+          title = "Query SNPs",
+          textInput("snpList", "Enter SNP rsIDs (comma separated)", value = "", placeholder = "rs123, rs5574"),
+          h5(helpText("Upload SNP List (one SNP per line)")),
+          fileInput("file1", "Choose a file",
+                    accept = c(
+                      "text/csv",
+                      "text/comma-separated-values,text/plain",
+                      ".csv"
+                    )
           ),
-          fluidRow(
-            tabBox(
-              title = "Variant Annotation",
-              tabPanel(
-                "HaploReg",
-                withSpinner(DT::dataTableOutput("LDtable1"), proxy.height = "100px")
+          tags$hr(),
+          tags$div(
+            class = "btn-toolbar",
+            actionButton("update1", "Perform query", class = "btn-primary", style = "color: #FFFFFF"),
+            tags$div(
+              class = "btn-group dropup",
+              tags$button(
+                class = "btn btn-default dropdown-toggle",
+                role = "button",
+                id = "exampleDropdownMenu",
+                "data-toggle" = "dropdown",
+                "aria-haspopup" = "true",
+                "aria-expanded" = "false",
+                "Example Queries", tags$span(class = "caret")
               ),
-              tabPanel(
-                "RegulomeDB",
-                withSpinner(DT::dataTableOutput("LDtable2"), proxy.height = "100px")
-              ),
-              tabPanel(
-                "TADs",
-                withSpinner(textOutput("tadBoundaries"), proxy.height = "100px"),
-                uiOutput("hic1")
-              )
-            ),
-            tabBox(
-              title = "Gene Annotation",
-              tabPanel(
-                "ENSEMBL",
-                h5(helpText("Genes spanned by the greater of the LD or TAD region")),
-                withSpinner(DT::dataTableOutput("geneTable"), proxy.height = "100px")
-              ),
-              tabPanel(
-                "Oncotator",
-                withSpinner(DT::dataTableOutput("oncoTable"), proxy.height = "100px")
-              ),
-              tabPanel(
-                "eQTL",
-                tags$div(
-                  style = "min-height: 1.5em",
-                  DT::dataTableOutput("eTable1")
-                ),
-                uiOutput("eqtl1")
-              )
-            ),
-            column(12,
-              align = "center", offset = 3,
-              tabBox(
-                title = "Other",
-                tabPanel(
-                  "Figure",
-                  withSpinner(plotOutput("megaPlot", height = "450px")),
-                  h5(helpText("Coordinates must be at least 200000 BP apart")),
-                  uiOutput("plotStart"),
-                  uiOutput("plotEnd"),
-                  actionButton("updateBP", "Update Coordinates"),
-                  actionButton("resetBP", "Reset Plot"),
-                  downloadButton("plotDownload", "Download Plot"),
-                  selectInput("plotColor", "Color Scheme",
-                    choices = list(
-                      "Topo" = 1,
-                      "Rainbow" = 2,
-                      "Heat" = 3,
-                      "Terrain" = 4,
-                      "CM" = 5
-                    ), multiple = FALSE, selected = 1
-                  )
-                ),
-                tabPanel(
-                  "Links",
-                  uiOutput("clinical1"),
-                  uiOutput("ucsc1")
+              tags$ul(
+                class = "dropdown-menu box-shadow",
+                "aria-labelledby" = "exampleDropdownMenu",
+                tags$li("A selection of SNPs that are...", class = "dropdown-header"),
+                example_url(EXAMPLES$ancestry),
+                example_url(EXAMPLES$`8q24`),
+                example_url(EXAMPLES$protective),
+                tags$li(class="divider"),
+                tags$li(
+                  actionLink("btn_info", "About epiTAD", icon = icon("info")),
+                  class = "dropdown-item"
                 )
               )
-            )
+            ),
+            bookmarkButton(class = "pull-right")
           )
         ),
-        tabItem(
-          tabName = "tab2",
-          fluidRow(
-            box(
-              title = "App Details",
-              h5(helpText("LD is calculated from 1000 Genomes Phase 1 (http://www.internationalgenome.org), and queried from the HaploR (https://cran.r-project.org/web/packages/haploR/index.html) interface to HaploReg (http://archive.broadinstitute.org/mammals/haploreg/haploreg.php).
-                           For TAD visualization check out the Yue Lab (http://promoter.bx.psu.edu/hi-c/).
-                           TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'."))
-            ),
-            box(
-              title = "Development Team",
-              h5(helpText("Programming: Jordan Creed, Garrick Aden-Buie and Travis Gerke")),
-              h5(helpText("Scientific Input: Alvaro Monteiro")),
-              h5(helpText("Website: http://travisgerke.com"))
-            ),
-            box(
-              title = "Other resources",
-              a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")
-            )
+        tabBox(
+          title = "Select Output",
+          tabPanel(
+            "Source",
+            selectInput("pop", "Population", INPUT_CHOICES$population, selected = "EUR"),
+            sliderInput("value", "LD threshold", min = 0, max = 1, value = 0.8)
           ),
-          fluidRow(
-            box(
-              title = "Notes",
-              h5(helpText("If no SNPs are in LD above the specified threshold then a range of 53500 BP is applied to either side of the SNP.
-                           If SNPs in LD exist, then the range is set to the smallest region which covers of all genomic locations in LD with the queried SNP(s) and the TAD region.
-                           This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser."))
-            )
+          tabPanel(
+            "HaploReg",
+            checkboxGroupInput("parameters", "HaploR", INPUT_CHOICES$HaploR, inline = TRUE, selected = c("query_snp_rsid", "pos_hg38", "r2"))
+          ),
+          tabPanel(
+            "RegulomeDB",
+            checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate","score_anno"))
+          ),
+          tabPanel(
+            "eQTL",
+            uiOutput("eTissues")
+          ),
+          tabPanel(
+            "Oncotator",
+            checkboxGroupInput("oncoParameters1", "General", INPUT_CHOICES$onco$general, inline = TRUE),
+            checkboxGroupInput("oncoParameters2", "Cancer Gene Census", INPUT_CHOICES$onco$cancer_gene_census, inline = TRUE),
+            checkboxGroupInput("oncoParameters3", "HUGO Gene Nomenclature Committee", INPUT_CHOICES$onco$hugo_gene_nomenclature, inline = TRUE),
+            checkboxGroupInput("oncoParameters4", "UniProt", INPUT_CHOICES$onco$uniprot, inline = TRUE)
           )
+        )
+      ),
+      fluidRow(
+        tabBox(
+          title = "Variant Annotation",
+          tabPanel(
+            "HaploReg",
+            withSpinner(DT::dataTableOutput("LDtable1"), proxy.height = "100px")
+          ),
+          tabPanel(
+            "RegulomeDB",
+            withSpinner(DT::dataTableOutput("LDtable2"), proxy.height = "100px")
+          ),
+          tabPanel(
+            "TADs",
+            withSpinner(textOutput("tadBoundaries"), proxy.height = "100px"),
+            uiOutput("hic1")
+          )
+        ),
+        tabBox(
+          title = "Gene Annotation",
+          tabPanel(
+            "ENSEMBL",
+            h5(helpText("Genes spanned by the greater of the LD or TAD region")),
+            withSpinner(DT::dataTableOutput("geneTable"), proxy.height = "100px")
+          ),
+          tabPanel(
+            "Oncotator",
+            withSpinner(DT::dataTableOutput("oncoTable"), proxy.height = "100px")
+          ),
+          tabPanel(
+            "eQTL",
+            tags$div(
+              style = "min-height: 1.5em",
+              DT::dataTableOutput("eTable1")
+            ),
+            uiOutput("eqtl1")
+          )
+        ),
+        column(12,
+               align = "center", offset = 3,
+               tabBox(
+                 title = "Other",
+                 tabPanel(
+                   "Figure",
+                   withSpinner(plotOutput("megaPlot", height = "450px")),
+                   h5(helpText("Coordinates must be at least 200000 BP apart")),
+                   uiOutput("plotStart"),
+                   uiOutput("plotEnd"),
+                   actionButton("updateBP", "Update Coordinates"),
+                   actionButton("resetBP", "Reset Plot"),
+                   downloadButton("plotDownload", "Download Plot"),
+                   selectInput("plotColor", "Color Scheme",
+                               choices = list(
+                                 "Topo" = 1,
+                                 "Rainbow" = 2,
+                                 "Heat" = 3,
+                                 "Terrain" = 4,
+                                 "CM" = 5
+                               ), multiple = FALSE, selected = 1
+                   )
+                 ),
+                 tabPanel(
+                   "Links",
+                   uiOutput("clinical1"),
+                   uiOutput("ucsc1")
+                 )
+               )
         )
       )
     )
