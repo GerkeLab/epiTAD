@@ -260,49 +260,83 @@ function(request) {
         tags$div(
           class = "col-12 col-md-8 col-md-offset-2 col-lg-6 col-lg-offset-3",
           tabBox(
-            title = "Other",
-            width = NULL,
+            title = "Other", width = NULL,
             tabPanel(
               "Figure",
-              withSpinner(plotOutput("megaPlot", height = "450px")),
-              fluidRow(
-                column(4, numericInput("plotStartBP", label = "Starting Coordinates (BP)", value = 0)),
-                column(4, numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = 0)),
-                column(4,
-                       selectizeInput("plotColor", "Color Scheme",
-                                      choices = list(
-                                        "Viridis" = list(
-                                          "Viridis",
-                                          "Magma",
-                                          "Plasma",
-                                          "Inferno",
-                                          "Cividis"
-                                        ),
-                                        "Viridis Reversed" = list(
-                                          "Viridis (Reverse)" = "viridis rev",
-                                          "Magma (Reverse)" = "magma rev",
-                                          "Plasma (Reverse)" = "plasma rev",
-                                          "Inferno (Reverse)" = "inferno rev",
-                                          "Cividis (Reverse)" = "cividis rev"
-                                        ),
-                                        "Other Palettes" = list(
-                                          "Topo",
-                                          "Rainbow",
-                                          "Heat",
-                                          "Terrain",
-                                          "CM"
-                                        )
-                                      ), multiple = FALSE, selected = "Viridis"
-                       )
-                )
-              ),
-              helpText("Coordinates must be at least 200000 BP apart"),
               tags$div(
-                class = "btn-group",
-                actionButton("updateBP", "Update Coordinates"),
-                actionButton("resetBP", "Reset Plot"),
-                downloadButton("plotDownload", "Download Plot")
-              )
+                # plot controls panel group ----
+                class = "panel-group", id = "plot-controls", role = "tablist", "aria-multiselectable" = "true",
+                tags$div(
+                  class = "panel panel-default",
+                  tags$div(
+                    # plot controls panel heading ----
+                    class = "panel-heading", role = "tab", id = "plot-controls-heading",
+                    tags$h5(
+                      class = "panel-title",
+                      tags$a("Plot Controls", href = "#plot-controls-body",
+                             class = "collapsed", role = "button",
+                             "data-toggle" = "collapse", "data-parent" = "#plot-controls",
+                             "aria-expanded" = "false", "aria-controls" = "plot-controls-body")
+                    )
+                    # plot controls panel heading end ----
+                  ),
+                  tags$div(
+                    # plot controls panel body wrapper ----
+                    id = "plot-controls-body", role = "tabpanel", "aria-labelledby" = "plot-controls-heading",
+                    class = "panel-collapse collapse",
+                    tags$div(
+                      # plot controls panel body ----
+                      class = "panel-body",
+                      helpText("Coordinates must be at least 200000 BP apart"),
+                      fluidRow(
+                        # plot controls input row ----
+                        column(4, numericInput("plotStartBP", label = "Starting Coordinates (BP)", value = 0)),
+                        column(4, numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = 0)),
+                        column(4,
+                               selectizeInput("plotColor", "Color Scheme",
+                                              choices = list(
+                                                "Viridis" = list(
+                                                  "Viridis",
+                                                  "Magma",
+                                                  "Plasma",
+                                                  "Inferno",
+                                                  "Cividis"
+                                                ),
+                                                "Viridis Reversed" = list(
+                                                  "Viridis (Reverse)" = "viridis rev",
+                                                  "Magma (Reverse)" = "magma rev",
+                                                  "Plasma (Reverse)" = "plasma rev",
+                                                  "Inferno (Reverse)" = "inferno rev",
+                                                  "Cividis (Reverse)" = "cividis rev"
+                                                ),
+                                                "Other Palettes" = list(
+                                                  "Topo",
+                                                  "Rainbow",
+                                                  "Heat",
+                                                  "Terrain",
+                                                  "CM"
+                                                )
+                                              ), multiple = FALSE, selected = "Viridis"
+                               )
+                        )
+                        # plot controls input row end ----
+                      ),
+                      tags$div(
+                        # plot-controls button group ----
+                        class = "btn-group",
+                        actionButton("updateBP", "Update Coordinates"),
+                        actionButton("resetBP", "Reset Plot"),
+                        downloadButton("plotDownload", "Download Plot")
+                        # plot controls button group end ----
+                      )
+                      # plot controls panel body end ----
+                    )
+                    # plot controls panel body wrapper end ----
+                  )
+                )
+                # plot controls panel group end ----
+              ),
+              withSpinner(plotOutput("megaPlot", height = "450px"))
             ),
             tabPanel(
               "Links",
