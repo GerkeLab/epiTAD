@@ -586,6 +586,42 @@ function(input, output, session) {
     }
   })
 
+  observeEvent(input$btn_info, {
+    modal_ui <- tagList(
+        tags$h4("App Details"),
+        tags$p(
+          "LD is calculated from", tags$a("1000 Genomes Phase 1",href="http://www.internationalgenome.org"),
+          "and queried from the", tags$a("HaploR",href="https://cran.r-project.org/web/packages/haploR/index.html"),
+          "interface to", tags$a("HaploReg.",href="http://archive.broadinstitute.org/mammals/haploreg/haploreg.php"),
+          "TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'."
+        ),
+        tags$h4("Development Team"),
+        tags$p(
+          tags$strong("Programming:"), "Jordan Creed, Garrick Aden-Buie and Travis Gerke", tags$br(),
+          tags$strong("Scientific Input:"), "Alvaro Monteiro", tags$br(),
+          tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD")
+        ),
+        tags$h4("Other resources"),
+        tags$p(
+          tags$a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank"),
+          tags$br(),
+          tags$a("Yue Lab 3D Genome Browser", href = "http://promoter.bx.psu.edu", target = "_blank"),
+          tags$br(),
+          tags$a("CHiCP", href="https://www.chicp.org", target = "_blank"),
+          tags$br(),
+          tags$a("HiGlass", href="http://gehlenborglab.org/research/projects/higlass/", target = "_blank")
+        ),
+      tags$h4("Notes"),
+      tags$p(
+        "If no SNPs are in LD above the specified threshold then a range of 53500 BP is applied to",
+        "either side of the SNP. If SNPs in LD exist, then the range is set to the smallest region",
+        "which covers of all genomic locations in LD with the queried SNP(s) and the TAD region.",
+        "This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser.")
+    )
+
+    showModal(modalDialog(title = "App Information", modal_ui, footer = modalButton("OK")))
+  })
+
   observe({
     req(r_trigger_queried())
     r_trigger_queried()
