@@ -602,14 +602,11 @@ function(input, output, session) {
           tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD")
         ),
         tags$h4("Other resources"),
-        tags$p(
-          tags$a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank"),
-          tags$br(),
-          tags$a("Yue Lab 3D Genome Browser", href = "http://promoter.bx.psu.edu", target = "_blank"),
-          tags$br(),
-          tags$a("CHiCP", href="https://www.chicp.org", target = "_blank"),
-          tags$br(),
-          tags$a("HiGlass", href="http://gehlenborglab.org/research/projects/higlass/", target = "_blank")
+        tags$ul(
+          tags$li(tags$a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")),
+          tags$li(tags$a("Yue Lab 3D Genome Browser", href = "http://promoter.bx.psu.edu", target = "_blank")),
+          tags$li(tags$a("CHiCP", href="https://www.chicp.org", target = "_blank")),
+          tags$li(tags$a("HiGlass", href="http://gehlenborglab.org/research/projects/higlass/", target = "_blank"))
         ),
       tags$h4("Notes"),
       tags$p(
@@ -619,7 +616,8 @@ function(input, output, session) {
         "This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser.")
     )
 
-    showModal(modalDialog(title = "App Information", modal_ui, footer = modalButton("OK")))
+    showModal(modalDialog(title = "App Information", modal_ui,
+                          footer = modalButton("OK"), easyClose = TRUE))
   })
 
   observe({
