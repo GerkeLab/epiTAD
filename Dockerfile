@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y libssl-dev libxml2-dev \
   && rm -rf /var/lib/apt/lists/ \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
-RUN Rscript -e "install.packages(c('BiocManager', 'shinydashboard', 'data.table', 'shinycssloaders', 'jsonlite', 'colorspace'))" \
+RUN Rscript -e "install.packages(c('BiocManager', 'shinydashboard', 'data.table', 'shinycssloaders', 'jsonlite', 'colorspace', 'DT'))" \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
 RUN Rscript -e "BiocManager::install(c('haploR', 'HiTC', 'Sushi', 'biomaRt'))" \
