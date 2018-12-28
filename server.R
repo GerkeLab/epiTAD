@@ -66,6 +66,9 @@ function(input, output, session) {
 
   safe_queryHaploreg <- safely(queryHaploreg)
 
+  # A flag to trigger recalc of other UI elements when query button is hit
+  r_trigger_queried <- reactiveVal(FALSE)
+
   dat <- eventReactive(input$update1, {
     if (input$snpList == "") {
       dat <- sample()
@@ -81,6 +84,7 @@ function(input, output, session) {
       }
     }
     shiny::validate(need(is.null(x$error), SNP_QUERY_ERROR))
+    r_trigger_queried(!r_trigger_queried())
     if (is.null(x$error)) x$result
   })
 
@@ -310,8 +314,10 @@ function(input, output, session) {
   })
 
   observeEvent(input$resetBP, {
-    values$tmp_min <- 0
-    values$tmp_max <- 999
+    values$tmp_min <- total_min()
+    values$tmp_max <- total_max()
+    updateNumericInput(session, "plotStartBP", value = total_min())
+    updateNumericInput(session, "plotEndBP", value = total_max())
   })
 
   output$hic1 <- renderUI({
@@ -401,12 +407,34 @@ function(input, output, session) {
     epitad_datatable(genes)
   }, server = FALSE)
 
+  plot_color <- reactive({
+    req(input$plotColor)
+    switch(
+      tolower(input$plotColor),
+      "topo" = topo.colors,
+      "rainbow" = rainbow,
+      "heat" = heat.colors,
+      "terrain" = terrain.colors,
+      "cm" = cm.colors,
+      "viridis" = viridisLite::viridis,
+      "viridis rev" = function(n, ...) viridisLite::viridis(n, direction = -1, ...),
+      "magma" = viridisLite::magma,
+      "magma rev" = function(n, ...) viridisLite::magma(n, direction = -1, ...),
+      "plasma" = viridisLite::plasma,
+      "plasma rev" = function(n, ...) viridisLite::plasma(n, direction = -1, ...),
+      "inferno" = viridisLite::inferno,
+      "inferno rev" = function(n, ...) viridisLite::inferno(n, direction = -1, ...),
+      "cividis" = viridisLite::cividis,
+      "cividis rev" = function(n, ...) viridisLite::cividis(n, direction = -1, ...),
+    )
+  })
+
   output$megaPlot <- renderPlot({
     ld <- dat()
     chrX <- max(ld$chr, na.rm = TRUE)
 
-    minBP <- ifelse(values$tmp_min == 0, total_min(), values$tmp_min)
-    maxBP <- ifelse(values$tmp_max == 999, total_max(), values$tmp_max)
+    minBP <- values$tmp_min
+    maxBP <- values$tmp_max
 
     hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
       chr = paste0("chr", chrX),
@@ -432,13 +460,8 @@ function(input, output, session) {
       chrom = paste0("chr", chrX),
       chromstart = min(as.numeric(colnames(hic_matrix))),
       chromend = max(as.numeric(colnames(hic_matrix))),
-      max_y = 20, zrange = c(0, 28), palette = ifelse(input$plotColor == 1, topo.colors,
-        ifelse(input$plotColor == 2, rainbow,
-          ifelse(input$plotColor == 3, heat.colors,
-            ifelse(input$plotColor == 4, terrain.colors, cm.colors)
-          )
-        )
-      ),
+      max_y = 20, zrange = c(0, 28),
+      palette = plot_color(),
       flip = FALSE
     )
     labelgenome(
@@ -452,31 +475,13 @@ function(input, output, session) {
     mtext("HIC Intensities", side = 2, line = 1.75, cex = .75, font = 2)
 
     plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-    segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = ifelse(input$plotColor == 1, topo.colors(n = nrow(genes), alpha = 0.7),
-      ifelse(input$plotColor == 2, rainbow(n = nrow(genes), alpha = 0.7),
-        ifelse(input$plotColor == 3, heat.colors(n = nrow(genes), alpha = 0.7),
-          ifelse(input$plotColor == 4, terrain.colors(n = nrow(genes), alpha = 0.7), rev(cm.colors(n = nrow(genes), alpha = 0.7)))
-        )
-      )
-    ), lend = 1)
-    text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = ifelse(input$plotColor == 1, topo.colors(n = nrow(genes), alpha = 0.7),
-      ifelse(input$plotColor == 2, rainbow(n = nrow(genes), alpha = 0.7),
-        ifelse(input$plotColor == 3, heat.colors(n = nrow(genes), alpha = 0.7),
-          ifelse(input$plotColor == 4, terrain.colors(n = nrow(genes), alpha = 0.7), rev(cm.colors(n = nrow(genes), alpha = 0.7)))
-        )
-      )
-    ))
+    segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
+    text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = plot_color()(n = nrow(genes), alpha = 0.7))
     mtext("Genes", side = 2, line = 1.75, cex = .75, font = 2)
 
     plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
     abline(v = ld[ld$is_query_snp == 0, ]$pos_hg38, col = "grey", lend = 1) # lwd=6
-    abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = ifelse(input$plotColor == 1, topo.colors(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7),
-      ifelse(input$plotColor == 2, rainbow(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7),
-        ifelse(input$plotColor == 3, heat.colors(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7),
-          ifelse(input$plotColor == 4, rev(terrain.colors(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7)), cm.colors(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7))
-        )
-      )
-    ), lend = 1)
+    abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
     mtext("LD", side = 2, line = 1.75, cex = .75, font = 2)
 
     plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
@@ -485,13 +490,7 @@ function(input, output, session) {
       y0 = 0.5,
       x1 = tads[tads$seqnames == paste0("chr", chrX), ]$end,
       y1 = 0.5, lwd = 30,
-      col = ifelse(input$plotColor == 1, topo.colors(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7),
-        ifelse(input$plotColor == 2, rainbow(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7),
-          ifelse(input$plotColor == 3, heat.colors(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7),
-            ifelse(input$plotColor == 4, terrain.colors(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7), cm.colors(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7))
-          )
-        )
-      ),
+      col = plot_color()(n = nrow(genes), alpha = 0.7),
       lend = 1
     )
     mtext("TADs", side = 2, line = 1.75, cex = .75, font = 2)
@@ -506,8 +505,8 @@ function(input, output, session) {
       ld <- dat()
       chrX <- max(ld$chr, na.rm = TRUE)
 
-      minBP <- ifelse(values$tmp_min == 0, total_min(), values$tmp_min)
-      maxBP <- ifelse(values$tmp_max == 999, total_max(), values$tmp_max)
+      minBP <- values$tmp_min
+      maxBP <- values$tmp_max
 
       hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
         chr = paste0("chr", chrX),
@@ -533,13 +532,7 @@ function(input, output, session) {
         chrom = paste0("chr", chrX),
         chromstart = min(as.numeric(colnames(hic_matrix))),
         chromend = max(as.numeric(colnames(hic_matrix))),
-        max_y = 20, zrange = c(0, 28), palette = ifelse(input$plotColor == 1, topo.colors,
-          ifelse(input$plotColor == 2, rainbow,
-            ifelse(input$plotColor == 3, heat.colors,
-              ifelse(input$plotColor == 4, terrain.colors, cm.colors)
-            )
-          )
-        ),
+        max_y = 20, zrange = c(0, 28), palette = plot_color(),
         flip = FALSE
       )
       labelgenome(
@@ -553,31 +546,13 @@ function(input, output, session) {
       mtext("HIC Intensities", side = 2, line = 1.75, cex = .75, font = 2)
 
       plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-      segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = ifelse(input$plotColor == 1, topo.colors(n = nrow(genes), alpha = 0.7),
-        ifelse(input$plotColor == 2, rainbow(n = nrow(genes), alpha = 0.7),
-          ifelse(input$plotColor == 3, heat.colors(n = nrow(genes), alpha = 0.7),
-            ifelse(input$plotColor == 4, terrain.colors(n = nrow(genes), alpha = 0.7), rev(cm.colors(n = nrow(genes), alpha = 0.7)))
-          )
-        )
-      ), lend = 1)
-      text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = ifelse(input$plotColor == 1, topo.colors(n = nrow(genes), alpha = 0.7),
-        ifelse(input$plotColor == 2, rainbow(n = nrow(genes), alpha = 0.7),
-          ifelse(input$plotColor == 3, heat.colors(n = nrow(genes), alpha = 0.7),
-            ifelse(input$plotColor == 4, terrain.colors(n = nrow(genes), alpha = 0.7), rev(cm.colors(n = nrow(genes), alpha = 0.7)))
-          )
-        )
-      ))
+      segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
+      text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = plot_color()(n = nrow(genes), alpha = 0.7))
       mtext("Genes", side = 2, line = 1.75, cex = .75, font = 2)
 
       plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
       abline(v = ld[ld$is_query_snp == 0, ]$pos_hg38, col = "grey", lend = 1) # lwd=6
-      abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = ifelse(input$plotColor == 1, topo.colors(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7),
-        ifelse(input$plotColor == 2, rainbow(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7),
-          ifelse(input$plotColor == 3, heat.colors(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7),
-            ifelse(input$plotColor == 4, rev(terrain.colors(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7)), cm.colors(n = nrow(ld[ld$is_query_snp == 1, ]), alpha = 0.7))
-          )
-        )
-      ), lend = 1)
+      abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
       mtext("LD", side = 2, line = 1.75, cex = .75, font = 2)
 
       plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
@@ -586,13 +561,7 @@ function(input, output, session) {
         y0 = 0.5,
         x1 = tads[tads$seqnames == paste0("chr", chrX), ]$end,
         y1 = 0.5, lwd = 30,
-        col = ifelse(input$plotColor == 1, topo.colors(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7),
-          ifelse(input$plotColor == 2, rainbow(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7),
-            ifelse(input$plotColor == 3, heat.colors(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7),
-              ifelse(input$plotColor == 4, terrain.colors(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7), cm.colors(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]), alpha = 0.7))
-            )
-          )
-        ),
+        col = plot_color()(n = nrow(genes), alpha = 0.7),
         lend = 1
       )
       mtext("TADs", side = 2, line = 1.75, cex = .75, font = 2)
@@ -601,11 +570,30 @@ function(input, output, session) {
     }
   )
 
-  output$plotStart <- renderUI({
-    numericInput("plotStartBP", label = "Starting Coordinates (BP)", value = total_min())
+  # Update plot start when min changes
+  observe({
+    req(total_max())
+    s_plotStartBP <- isolate(input$plotStartBP)
+    if (s_plotStartBP < total_min()) {
+      updateNumericInput(session, "plotStartBP", value = total_min())
+    }
   })
 
-  output$plotEnd <- renderUI({
-    numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = total_max())
+  # Update plot end when max changes
+  observe({
+    req(total_max())
+    s_plotEndBP <- isolate(input$plotEndBP)
+    if (s_plotEndBP > total_max()) {
+      updateNumericInput(session, "plotEndBP", value = total_max())
+    }
   })
+
+  observe({
+    req(r_trigger_queried())
+    r_trigger_queried()
+    values$tmp_min <- total_min()
+    values$tmp_max <- total_max()
+    updateNumericInput(session, "plotStartBP", value = total_min())
+    updateNumericInput(session, "plotEndBP", value = total_max())
+  }, priority = 1000)
 }
