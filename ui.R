@@ -264,11 +264,6 @@ function(request) {
               tabBox(
                 title = "Other",
                 tabPanel(
-                  "Links",
-                  uiOutput("clinical1"),
-                  uiOutput("ucsc1")
-                ),
-                tabPanel(
                   "Figure",
                   withSpinner(plotOutput("megaPlot", height = "450px")),
                   h5(helpText("Coordinates must be at least 200000 BP apart")),
@@ -286,6 +281,11 @@ function(request) {
                       "CM" = 5
                     ), multiple = FALSE, selected = 1
                   )
+                ),
+                tabPanel(
+                  "Links",
+                  uiOutput("clinical1"),
+                  uiOutput("ucsc1")
                 )
               )
             )
@@ -296,28 +296,26 @@ function(request) {
           fluidRow(
             box(
               title = "App Details",
-              h5(helpText("LD is calculated from 1000 Genomes Phase 1 (http://www.internationalgenome.org), and queried from HaploReg (http://archive.broadinstitute.org/mammals/haploreg/haploreg.php)
-                           To perform similar queries in R please check out the haploR package!
+              h5(helpText("LD is calculated from 1000 Genomes Phase 1 (http://www.internationalgenome.org), and queried from the HaploR (https://cran.r-project.org/web/packages/haploR/index.html) interface to HaploReg (http://archive.broadinstitute.org/mammals/haploreg/haploreg.php).
                            For TAD visualization check out the Yue Lab (http://promoter.bx.psu.edu/hi-c/).
                            TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'."))
             ),
             box(
               title = "Development Team",
-              h5(helpText("Programming: Jordan Creed, Travis Gerke")),
+              h5(helpText("Programming: Jordan Creed, Garrick Aden-Buie and Travis Gerke")),
               h5(helpText("Scientific Input: Alvaro Monteiro")),
               h5(helpText("Website: http://travisgerke.com"))
             ),
             box(
               title = "Other resources",
-              h5(helpText("Aiden Lab")),
-              a("Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")
+              a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")
             )
           ),
           fluidRow(
             box(
               title = "Notes",
               h5(helpText("If no SNPs are in LD above the specified threshold then a range of 53500 BP is applied to either side of the SNP.
-                           If SNPs in LD exist, then the range is based on the minimum and maximum BP of all SNPs in LD and the TAD region.
+                           If SNPs in LD exist, then the range is set to the smallest region which covers of all genomic locations in LD with the queried SNP(s) and the TAD region.
                            This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser."))
             )
           )
