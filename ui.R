@@ -254,36 +254,62 @@ function(request) {
             ),
             uiOutput("eqtl1")
           )
-        ),
-        column(12,
-               align = "center", offset = 3,
-               tabBox(
-                 title = "Other",
-                 tabPanel(
-                   "Figure",
-                   withSpinner(plotOutput("megaPlot", height = "450px")),
-                   h5(helpText("Coordinates must be at least 200000 BP apart")),
-                   uiOutput("plotStart"),
-                   uiOutput("plotEnd"),
-                   actionButton("updateBP", "Update Coordinates"),
-                   actionButton("resetBP", "Reset Plot"),
-                   downloadButton("plotDownload", "Download Plot"),
-                   selectInput("plotColor", "Color Scheme",
-                               choices = list(
-                                 "Topo" = 1,
-                                 "Rainbow" = 2,
-                                 "Heat" = 3,
-                                 "Terrain" = 4,
-                                 "CM" = 5
-                               ), multiple = FALSE, selected = 1
-                   )
-                 ),
-                 tabPanel(
-                   "Links",
-                   uiOutput("clinical1"),
-                   uiOutput("ucsc1")
-                 )
-               )
+        )
+      ),
+      fluidRow(
+        tags$div(
+          class = "col-12 col-md-8 col-md-offset-2 col-lg-6 col-lg-offset-3",
+          tabBox(
+            title = "Other",
+            width = NULL,
+            tabPanel(
+              "Figure",
+              withSpinner(plotOutput("megaPlot", height = "450px")),
+              fluidRow(
+                column(4, numericInput("plotStartBP", label = "Starting Coordinates (BP)", value = 0)),
+                column(4, numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = 0)),
+                column(4,
+                       selectizeInput("plotColor", "Color Scheme",
+                                      choices = list(
+                                        "Viridis" = list(
+                                          "Viridis",
+                                          "Magma",
+                                          "Plasma",
+                                          "Inferno",
+                                          "Cividis"
+                                        ),
+                                        "Viridis Reversed" = list(
+                                          "Viridis (Reverse)" = "viridis rev",
+                                          "Magma (Reverse)" = "magma rev",
+                                          "Plasma (Reverse)" = "plasma rev",
+                                          "Inferno (Reverse)" = "inferno rev",
+                                          "Cividis (Reverse)" = "cividis rev"
+                                        ),
+                                        "Other Palettes" = list(
+                                          "Topo",
+                                          "Rainbow",
+                                          "Heat",
+                                          "Terrain",
+                                          "CM"
+                                        )
+                                      ), multiple = FALSE, selected = "Viridis"
+                       )
+                )
+              ),
+              helpText("Coordinates must be at least 200000 BP apart"),
+              tags$div(
+                class = "btn-group",
+                actionButton("updateBP", "Update Coordinates"),
+                actionButton("resetBP", "Reset Plot"),
+                downloadButton("plotDownload", "Download Plot")
+              )
+            ),
+            tabPanel(
+              "Links",
+              uiOutput("clinical1"),
+              uiOutput("ucsc1")
+            )
+          )
         )
       )
     )
