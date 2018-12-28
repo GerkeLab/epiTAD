@@ -78,14 +78,15 @@ function(input, output, session) {
       snps <- as.character(unlist(strsplit(input$snpList, ",")))
       snps <- trimws(snps)
       x <- safe_queryHaploreg(query = snps, ldThresh = input$value, ldPop = input$pop)
-      if (is.null(x$error)) {
-        x$chr <- as.numeric(as.character(x$chr))
-        x$pos_hg38 <- as.numeric(as.character(x$pos_hg38))
-      }
     }
     shiny::validate(need(is.null(x$error), SNP_QUERY_ERROR))
     r_trigger_queried(!r_trigger_queried())
-    if (is.null(x$error)) x$result
+    if (is.null(x$error)) {
+      x <- x$result
+      x$chr <- as.numeric(as.character(x$chr))
+      x$pos_hg38 <- as.numeric(as.character(x$pos_hg38))
+    }
+    x
   })
 
   output$eTissues <- renderUI({
@@ -246,12 +247,9 @@ function(input, output, session) {
   output$tadBoundaries <- renderText({
     in_tad <- in_tad()
     if (nrow(in_tad) < 1) {
-      return(paste0("Not in a TAD!"))
-    }
-    else {
-      ({
-        return(paste0("In a TAD! The TAD ranges from ", in_tad$start_position, " to ", in_tad$end_position))
-      })
+      paste0("Not in a TAD!")
+    } else {
+      paste0("In a TAD! The TAD ranges from ", in_tad$start_position, " to ", in_tad$end_position)
     }
   })
 
