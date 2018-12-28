@@ -173,7 +173,7 @@ function(request) {
                 "data-toggle" = "dropdown",
                 "aria-haspopup" = "true",
                 "aria-expanded" = "false",
-                "Example Queries", tags$span(class = "caret")
+                "Examples", tags$span(class = "caret")
               ),
               tags$ul(
                 class = "dropdown-menu box-shadow",
@@ -181,14 +181,12 @@ function(request) {
                 tags$li("A selection of SNPs that are...", class = "dropdown-header"),
                 example_url(EXAMPLES$ancestry),
                 example_url(EXAMPLES$`8q24`),
-                example_url(EXAMPLES$protective),
-                tags$li(class="divider"),
-                tags$li(
-                  actionLink("btn_info", "About epiTAD", icon = icon("info")),
-                  class = "dropdown-item"
-                )
+                example_url(EXAMPLES$protective)
               )
             ),
+            actionButton("btn_info", "", icon = icon("info"),
+                       "data-toggle" = "tooltip", "data-placement" = "right",
+                       title = "Learn more about epiTAD"),
             bookmarkButton(class = "pull-right")
           )
         ),
