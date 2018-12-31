@@ -107,7 +107,7 @@ if (length(etest2)) {
 
 
 # Dat2 --------------------------------------------------------------------
-# TODO GAB: dat2 and associated function need more descriptive names
+# TODO: dat2 and associated function need more descriptive names
 dat2_function <- function(snpList) {
   snps <- as.character(unlist(strsplit(snpList, ",")))
   snps <- trimws(snps)
