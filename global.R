@@ -54,7 +54,7 @@ epitad_input_prepare <- function(input, need_escaped = c("snpList", "pop", "tiss
   as_valid_r_code <- function(x, deparse_opts = c("keepNA", "keepInteger", "niceNames")) {
     capture.output(dput(x, control = deparse_opts))
   }
-  for (inp in intersect(need_escaped, names(input))) {
+  for (inp in need_escaped) {
     if (is.null(input[[inp]])) input[[inp]] <- ""
     input[[inp]] <- paste(as_valid_r_code(input[[inp]]), collapse = "")
   }
