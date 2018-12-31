@@ -620,6 +620,31 @@ function(input, output, session) {
                           footer = modalButton("OK"), easyClose = TRUE))
   })
 
+  output$download_script <- downloadHandler(
+    filename = function() {
+      paste0("epiTAD_script_", Sys.Date(), ".R")
+    },
+    content = function(file) {
+      input_names <- setNames(nm = names(input))
+      inputs <- lapply(input_names, function(n) input[[n]])
+
+      # Inputs that are used in the template and match any of the following:
+      #   - Are character strings
+      #   - Are vectors of length > 1
+      # need to be explicitly declared so that they can be properly rendered.
+      char_or_vec_cols <- c("snpList", "pop", "tissue",
+                            paste0("oncoParameters", 1:4), "plotColor",
+                            "parameters", "parameters2")
+
+      write_analysis_script(file, inputs, char_or_vec_cols)
+    }
+  )
+
+  output$download_button_ui <- renderUI({
+    req(dat(), snps())
+    downloadButton("download_script", "R", class = "pull-right")
+  })
+
   observe({
     req(r_trigger_queried())
     r_trigger_queried()

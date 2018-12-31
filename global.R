@@ -48,3 +48,25 @@ EXAMPLES <- list(
     input_id = NULL
   )
 )
+
+# Functions to render template script
+epitad_input_prepare <- function(input, need_escaped = c("snpList", "pop", "tissue")) {
+  as_valid_r_code <- function(x, deparse_opts = c("keepNA", "keepInteger", "niceNames")) {
+    capture.output(dput(x, control = deparse_opts))
+  }
+  for (inp in intersect(need_escaped, names(input))) {
+    if (is.null(input[[inp]])) input[[inp]] <- ""
+    input[[inp]] <- paste(as_valid_r_code(input[[inp]]), collapse = "")
+  }
+  input
+}
+
+write_analysis_script <- function(file, inputs, char_or_vec_cols, template = "template/epiTAD_script.template.R") {
+  template <- paste(readLines(template), collapse = "\n")
+
+  inputs$timestamp <- strftime(Sys.time(), "%F %T %Z", tz = "UTC")
+
+  x <- whisker::whisker.render(template, data = epitad_input_prepare(inputs, char_or_vec_cols))
+  writeLines(x, file)
+}
+
