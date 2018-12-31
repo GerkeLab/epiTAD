@@ -628,6 +628,9 @@ function(input, output, session) {
       input_names <- setNames(nm = names(input))
       inputs <- lapply(input_names, function(n) input[[n]])
 
+      # use snps() to support either source of snps
+      inputs$snpList <- paste(snps(), collapse = ",")
+
       # Inputs that are used in the template and match any of the following:
       #   - Are character strings
       #   - Are vectors of length > 1
