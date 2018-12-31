@@ -109,6 +109,22 @@ if (length(etest2)) {
 # Dat2 --------------------------------------------------------------------
 # TODO GAB: dat2 and associated function need more descriptive names
 dat2_function <- function(snpList) {
+  regulome_recode <- c(
+    "1a" = "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak",
+    "1b" = "eQTL + TF binding + any motif + DNase Footprint + DNase peak",
+    "1c" = "eQTL + TF binding + matched TF motif + DNase peak",
+    "1d" = "eQTL + TF binding + any motif + DNase peak",
+    "1e" = "eQTL + TF binding + matched TF motif",
+    "1f" = "eQTL + TF binding / DNase peak",
+    "2a" = "TF binding + matched TF motif + matched DNase Footprint + DNase peak",
+    "2b" = "TF binding + any motif + DNase Footprint + DNase peak",
+    "2c" = "TF binding + matched TF motif + DNase peak",
+    "3a" = "TF binding + any motif + DNase peak",
+    "3b" = "TF binding + matched TF motif",
+    "4"  = "TF binding + DNase peak",
+    "5"  = "TF binding or DNase peak"
+  )
+
   snps <- as.character(unlist(strsplit(snpList, ",")))
   snps <- trimws(snps)
   x <- queryRegulome(query = snps)
@@ -117,51 +133,9 @@ dat2_function <- function(snpList) {
   }
   x <- as.data.frame(x$res.table)
   x$score <- as.character(x$score)
-  x$score_anno <- NA
-  for (i in 1:nrow(x)) {
-    if (x$score[i] == "1a") {
-      x$score_anno[i] <- "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-    }
-    else if (x$score[i] == "1b") {
-      x$score_anno[i] <- "eQTL + TF binding + any motif + DNase Footprint + DNase peak"
-    }
-    else if (x$score[i] == "1c") {
-      x$score_anno[i] <- "eQTL + TF binding + matched TF motif + DNase peak"
-    }
-    else if (x$score[i] == "1d") {
-      x$score_anno[i] <- "eQTL + TF binding + any motif + DNase peak"
-    }
-    else if (x$score[i] == "1e") {
-      x$score_anno[i] <- "eQTL + TF binding + matched TF motif"
-    }
-    else if (x$score[i] == "1f") {
-      x$score_anno[i] <- "eQTL + TF binding / DNase peak"
-    }
-    else if (x$score[i] == "2a") {
-      x$score_anno[i] <- "TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-    }
-    else if (x$score[i] == "2b") {
-      x$score_anno[i] <- "TF binding + any motif + DNase Footprint + DNase peak"
-    }
-    else if (x$score[i] == "2c") {
-      x$score_anno[i] <- "TF binding + matched TF motif + DNase peak"
-    }
-    else if (x$score[i] == "3a") {
-      x$score_anno[i] <- "TF binding + any motif + DNase peak"
-    }
-    else if (x$score[i] == "3b") {
-      x$score_anno[i] <- "TF binding + matched TF motif"
-    }
-    else if (x$score[i] == "4") {
-      x$score_anno[i] <- "TF binding + DNase peak"
-    }
-    else if (x$score[i] == "5") {
-      x$score_anno[i] <- "TF binding or DNase peak"
-    }
-    else {
-      x$score_anno[i] <- "Other"
-    }
-  }
+  x$score_anno <- ifelse(x$score %in% names(regulome_recode),
+                         regulome_recode[x$score],
+                         "Other")
   x
 }
 
