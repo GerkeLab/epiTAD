@@ -16,14 +16,11 @@ if [[ $(git status --short | egrep "^.M") != "" ]]; then
 fi
 
 set -x
-echo "version: $VERSION" > VERSION
 
-# Update version file, add to commit, then add SHA of this commit
-git add -u
-git commit -m "Version $VERSION"
-echo "commit: $(git rev-parse HEAD)" >> VERSION
+# Update version file, add to commit
+echo "version: $VERSION" > VERSION
 git add VERSION
-git commit --amend --no-edit
+git commit -m "Version $VERSION"
 git tag -a "v$VERSION" -m "$MESSAGE"
 git push
 git push --tags
