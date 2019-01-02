@@ -3,6 +3,8 @@
 #
 # epiTAD Analysis Script
 # Generated on {{timestamp}}
+# View online at
+#   - https://apps.gerkelab.com/epiTAD/{{epitad_bookmark_url}}
 #
 # Visit https://gerkelab.com/project/epiTAD for more information
 #

@@ -30,10 +30,14 @@ epitad_datatable <- function(
 }
 
 function(input, output, session) {
-  # Enable bookmarking button and update URL on bookmark
+  # Enable bookmarking updated on every change
   setBookmarkExclude("file1")
+  observe({
+    # Trigger this observer every time an input changes
+    reactiveValuesToList(input)
+    session$doBookmark()
+  })
   onBookmarked(function(url) {
-    showModal(urlModal(url, subtitle = "This link stores the current state of epiTAD."))
     updateQueryString(url)
   })
 
@@ -554,6 +558,9 @@ function(input, output, session) {
     content = function(file) {
       input_names <- setNames(nm = names(input))
       inputs <- lapply(input_names, function(n) input[[n]])
+
+      # Get bookmark url string
+      inputs$epitad_bookmark_url <- session$clientData$url_search
 
       # use snps() to support either source of snps
       inputs$snpList <- paste(snps(), collapse = ",")
