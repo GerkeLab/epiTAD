@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 if [[ "$1" == "" ]]; then
   echo "Please enter version as first argument without 'v' (e.g. 0.1.0)"
