@@ -13,7 +13,12 @@ RUN Rscript -e "install.packages(c('BiocManager', 'shinydashboard', 'data.table'
 RUN Rscript -e "BiocManager::install(c('haploR', 'HiTC', 'Sushi', 'biomaRt'))" \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
-RUN rm -r /srv/shiny-server/*
 ARG SHINY_APP_IDLE_TIMEOUT=0
 RUN sed -i "s/directory_index on;/app_idle_timeout ${SHINY_APP_IDLE_TIMEOUT};/g" /etc/shiny-server/shiny-server.conf
-COPY . /srv/shiny-server/epiTAD
+
+RUN rm -r /srv/shiny-server/* && mkdir -p /srv/shiny-server/epiTAD/data
+COPY VERSION /srv/shiny-server/epiTAD
+COPY global.R /srv/shiny-server/epiTAD
+COPY ui.R /srv/shiny-server/epiTAD
+COPY server.R /srv/shiny-server/epiTAD
+COPY data/ /srv/shiny-server/epiTAD/data/
