@@ -23,10 +23,12 @@ git add -u
 git commit -m "Version $VERSION"
 echo "commit: $(git rev-parse HEAD)" >> VERSION
 git add VERSION
-git commit --amend --no-edit
+git commit -C HEAD --amend
 git tag -a "v$VERSION" -m "$MESSAGE"
 git push
 git push --tags
+
+exit 0
 
 # Build and push Docker image
 docker build --tag gerkelab/epitad:$VERSION --tag gerkelab/epitad:latest .
