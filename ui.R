@@ -186,6 +186,7 @@ function(request) {
             ),
             actionButton("btn_info", "", icon = icon("info"),
                        "data-toggle" = "tooltip", "data-placement" = "right",
+                       class = "pull-right",
                        title = "Learn more about epiTAD"),
             uiOutput("download_button_ui")
           )
