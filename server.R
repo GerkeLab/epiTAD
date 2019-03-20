@@ -30,10 +30,14 @@ epitad_datatable <- function(
 }
 
 function(input, output, session) {
-  # Enable bookmarking button and update URL on bookmark
+  # Enable bookmarking updated on every change
   setBookmarkExclude("file1")
+  observe({
+    # Trigger this observer every time an input changes
+    reactiveValuesToList(input)
+    session$doBookmark()
+  })
   onBookmarked(function(url) {
-    showModal(urlModal(url, subtitle = "This link stores the current state of epiTAD."))
     updateQueryString(url)
   })
 
@@ -103,113 +107,40 @@ function(input, output, session) {
   })
 
   dat2 <- eventReactive(input$update1, {
+    regulome_recode <- c(
+      "1a" = "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak",
+      "1b" = "eQTL + TF binding + any motif + DNase Footprint + DNase peak",
+      "1c" = "eQTL + TF binding + matched TF motif + DNase peak",
+      "1d" = "eQTL + TF binding + any motif + DNase peak",
+      "1e" = "eQTL + TF binding + matched TF motif",
+      "1f" = "eQTL + TF binding / DNase peak",
+      "2a" = "TF binding + matched TF motif + matched DNase Footprint + DNase peak",
+      "2b" = "TF binding + any motif + DNase Footprint + DNase peak",
+      "2c" = "TF binding + matched TF motif + DNase peak",
+      "3a" = "TF binding + any motif + DNase peak",
+      "3b" = "TF binding + matched TF motif",
+      "4"  = "TF binding + DNase peak",
+      "5"  = "TF binding or DNase peak"
+    )
+
     if (input$snpList == "") {
       dat <- sample()
       snps <- dat[, 1]
       x <- queryRegulome(query = snps)
-      x <- as.data.frame(x$res.table)
-      x$score <- as.character(x$score)
-      x$score_anno <- NA
-      for (i in nrow(x)) {
-        if (x$score[i] == "1a") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "1b") {
-          x$score_anno[i] <- "eQTL + TF binding + any motif + DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "1c") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif + DNase peak"
-        }
-        else if (x$score[i] == "1d") {
-          x$score_anno[i] <- "eQTL + TF binding + any motif + DNase peak"
-        }
-        else if (x$score[i] == "1e") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif"
-        }
-        else if (x$score[i] == "1f") {
-          x$score_anno[i] <- "eQTL + TF binding / DNase peak"
-        }
-        else if (x$score[i] == "2a") {
-          x$score_anno[i] <- "TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "2b") {
-          x$score_anno[i] <- "TF binding + any motif + DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "2c") {
-          x$score_anno[i] <- "TF binding + matched TF motif + DNase peak"
-        }
-        else if (x$score[i] == "3a") {
-          x$score_anno[i] <- "TF binding + any motif + DNase peak"
-        }
-        else if (x$score[i] == "3b") {
-          x$score_anno[i] <- "TF binding + matched TF motif"
-        }
-        else if (x$score[i] == "4") {
-          x$score_anno[i] <- "TF binding + DNase peak"
-        }
-        else if (x$score[i] == "5") {
-          x$score_anno[i] <- "TF binding or DNase peak"
-        }
-        else {
-          x$score_anno[i] <- "Other"
-        }
-      }
-      return(x)
-    }
-    if (input$snpList != "") {
+    } else {
       snps <- as.character(unlist(strsplit(input$snpList, ",")))
       snps <- trimws(snps)
       x <- queryRegulome(query = snps)
-      shiny::validate(need(nrow(x$res.table) > 0, SNP_QUERY_ERROR))
-      x <- as.data.frame(x$res.table)
-      x$score <- as.character(x$score)
-      x$score_anno <- NA
-      for (i in 1:nrow(x)) {
-        if (x$score[i] == "1a") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "1b") {
-          x$score_anno[i] <- "eQTL + TF binding + any motif + DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "1c") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif + DNase peak"
-        }
-        else if (x$score[i] == "1d") {
-          x$score_anno[i] <- "eQTL + TF binding + any motif + DNase peak"
-        }
-        else if (x$score[i] == "1e") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif"
-        }
-        else if (x$score[i] == "1f") {
-          x$score_anno[i] <- "eQTL + TF binding / DNase peak"
-        }
-        else if (x$score[i] == "2a") {
-          x$score_anno[i] <- "TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "2b") {
-          x$score_anno[i] <- "TF binding + any motif + DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "2c") {
-          x$score_anno[i] <- "TF binding + matched TF motif + DNase peak"
-        }
-        else if (x$score[i] == "3a") {
-          x$score_anno[i] <- "TF binding + any motif + DNase peak"
-        }
-        else if (x$score[i] == "3b") {
-          x$score_anno[i] <- "TF binding + matched TF motif"
-        }
-        else if (x$score[i] == "4") {
-          x$score_anno[i] <- "TF binding + DNase peak"
-        }
-        else if (x$score[i] == "5") {
-          x$score_anno[i] <- "TF binding or DNase peak"
-        }
-        else {
-          x$score_anno[i] <- "Other"
-        }
-      }
-      return(x)
     }
+
+    shiny::validate(need(nrow(x$res.table) > 0, SNP_QUERY_ERROR))
+    x <- as.data.frame(x$res.table)
+    x$score <- as.character(x$score)
+    x$score_anno <- ifelse(x$score %in% names(regulome_recode),
+                           regulome_recode[x$score],
+                           "Other")
+
+    x
   })
 
   snps <- eventReactive(input$update1, {
@@ -623,6 +554,37 @@ function(input, output, session) {
 
     showModal(modalDialog(title = "App Information", modal_ui,
                           footer = modalButton("OK"), easyClose = TRUE))
+  })
+
+  output$download_script <- downloadHandler(
+    filename = function() {
+      paste0("epiTAD_script_", Sys.Date(), ".R")
+    },
+    content = function(file) {
+      input_names <- setNames(nm = names(input))
+      inputs <- lapply(input_names, function(n) input[[n]])
+
+      # Get bookmark url string
+      inputs$epitad_bookmark_url <- session$clientData$url_search
+
+      # use snps() to support either source of snps
+      inputs$snpList <- paste(snps(), collapse = ",")
+
+      # Inputs that are used in the template and match any of the following:
+      #   - Are character strings
+      #   - Are vectors of length > 1
+      # need to be explicitly declared so that they can be properly rendered.
+      char_or_vec_cols <- c("snpList", "pop", "tissue",
+                            paste0("oncoParameters", 1:4), "plotColor",
+                            "parameters", "parameters2")
+
+      write_analysis_script(file, inputs, char_or_vec_cols)
+    }
+  )
+
+  output$download_button_ui <- renderUI({
+    req(dat(), snps())
+    downloadButton("download_script", "R", class = "pull-right")
   })
 
   observe({

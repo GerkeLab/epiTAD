@@ -187,8 +187,9 @@ function(request) {
             ),
             actionButton("btn_info", "", icon = icon("info"),
                        "data-toggle" = "tooltip", "data-placement" = "right",
+                       class = "pull-right",
                        title = "Learn more about epiTAD"),
-            bookmarkButton(class = "pull-right")
+            uiOutput("download_button_ui")
           )
         ),
         tabBox(
