@@ -266,7 +266,9 @@ function(input, output, session) {
     # Return table
     etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
     etest3 <- as.data.frame(etest3)
-    colnames(etest3) <- c("Source", "Tissue", "Gene", "p")
+    etest3 <- cbind(dat[dat$eQTL!=".",]$rsID,etest3)
+    colnames(etest3) <- c("SNP","Source", "Tissue", "Gene", "p")
+    etest3 <- etest3[!duplicated(etest3),]
     epitad_datatable(etest3[etest3$Tissue %in% input$tissue, ])
   }, server = FALSE)
 
@@ -423,7 +425,7 @@ function(input, output, session) {
       "inferno" = viridisLite::inferno,
       "inferno rev" = function(n, ...) viridisLite::inferno(n, direction = -1, ...),
       "cividis" = viridisLite::cividis,
-      "cividis rev" = function(n, ...) viridisLite::cividis(n, direction = -1, ...),
+      "cividis rev" = function(n, ...) viridisLite::cividis(n, direction = -1, ...)
     )
   })
 
@@ -593,13 +595,16 @@ function(input, output, session) {
           "LD is calculated from", tags$a("1000 Genomes Phase 1",href="http://www.internationalgenome.org"),
           "and queried from the", tags$a("HaploR",href="https://cran.r-project.org/web/packages/haploR/index.html"),
           "interface to", tags$a("HaploReg.",href="http://archive.broadinstitute.org/mammals/haploreg/haploreg.php"),
-          "TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'."
+          "TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'.",
+          "eQTLs are taken from", tags$a("GTEx", href="https://gtexportal.org/home/"),
+          "and IMR90 Hi-C values are available from ",tags$a("GSE35156",href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE35156")
         ),
         tags$h4("Development Team"),
         tags$p(
           tags$strong("Programming:"), "Jordan Creed, Garrick Aden-Buie and Travis Gerke", tags$br(),
           tags$strong("Scientific Input:"), "Alvaro Monteiro", tags$br(),
-          tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD")
+          tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD"), tags$br(),
+          tags$strong("Github:"), tags$a(href = "https://github.com/GerkeLab/epiTAD", "https://github.com/GerkeLab/epiTAD")
         ),
         tags$h4("Other resources"),
         tags$ul(
@@ -628,4 +633,61 @@ function(input, output, session) {
     updateNumericInput(session, "plotStartBP", value = total_min())
     updateNumericInput(session, "plotEndBP", value = total_max())
   }, priority = 1000)
+
+  output$download_all <- downloadHandler(
+    filename = function() {
+      paste("epiTAD", ".xlsx", sep = "")
+    },
+    content = function(file) {
+      # files <- NULL
+
+      x <- dat()
+      z <- dat2()
+
+      haploReg_table <- x[, c("rsID", input$parameters)]
+      regulomeDB_table <- z[, c("rsid", input$parameters2)]
+
+      chr <- max(x$chr, na.rm = TRUE)
+      total_min <- total_min()
+      total_max <- total_max()
+
+      genes <- getBM(
+        attributes = c("hgnc_symbol", "start_position", "end_position"),
+        filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
+      )
+
+      y <- fromJSON(paste0("http://portals.broadinstitute.org/oncotator/genes/", chr, "_", total_min, "_", total_max, "/"))
+
+      onco <- as.data.frame(y[[1]])
+
+      for (i in seq_along(y)[-1]) {
+        gene_dat <- as.data.frame(y[[i]])
+        onco <- rbind(onco, gene_dat)
+      }
+
+      onco <- onco[, c("gene", input$oncoParameters1, input$oncoParameters2, input$oncoParameters3, input$oncoParameters4),
+                     drop = FALSE]
+
+      etest <- unlist(strsplit(as.character(x$eQTL), ";"))
+      etest <- etest[!etest %in% c(".")]
+      etest2 <- unlist(strsplit(etest, ","))
+
+      # Return table
+      etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
+      etest3 <- as.data.frame(etest3)
+      etest3 <- cbind(x[x$eQTL!=".",]$rsID,etest3)
+      colnames(etest3) <- c("SNP","Source", "Tissue", "Gene", "p")
+      etest3 <- etest3[!duplicated(etest3),]
+      etest3 <- etest3[etest3$Tissue %in% input$tissue, ]
+
+      writexl::write_xlsx(list("haploreg" = haploReg_table,
+                               "regulome" = regulomeDB_table,
+                               "ENSEMBL" = genes,
+                               "ONCOTATOR" = onco,
+                               "eQTL" = etest3),
+                          path=file)
+
+    }
+  )
+
 }

@@ -127,6 +127,7 @@ INPUT_CHOICES <- list(
     "Coordinates" = "coordinate",
     "Hits" = "hits",
     "Score" = "score_anno"
+    # "Score" = "score"
   )
 )
 
@@ -203,7 +204,7 @@ function(request) {
           ),
           tabPanel(
             "RegulomeDB",
-            checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate","score_anno"))
+            checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate","score"))
           ),
           tabPanel(
             "eQTL",
@@ -260,7 +261,7 @@ function(request) {
         tags$div(
           class = "col-12 col-md-8 col-md-offset-2 col-lg-6 col-lg-offset-3",
           tabBox(
-            title = "Other", width = NULL,
+            title = "Other", width = 12,
             tabPanel(
               "Figure",
               tags$div(
@@ -342,7 +343,12 @@ function(request) {
               "Links",
               uiOutput("clinical1"),
               uiOutput("ucsc1")
-            )
+            ),
+            tabPanel(
+              "Download",
+              tags$p("Use the button below to download all tables in a single excel file"),
+              downloadButton("download_all", "Download all")
+              )
           )
         )
       )
