@@ -9,6 +9,8 @@ library(Sushi)
 library(HiTC)
 library(colorspace)
 library(writexl)
+library(tidyverse)
+library(plotly)
 
 # Global Data
 ensembl54 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")

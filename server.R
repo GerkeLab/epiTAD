@@ -429,7 +429,79 @@ function(input, output, session) {
     )
   })
 
-  output$megaPlot <- renderPlot({
+  # output$megaPlot <- renderPlot({
+  #   ld <- dat()
+  #   chrX <- max(ld$chr, na.rm = TRUE)
+  #
+  #   minBP <- values$tmp_min
+  #   maxBP <- values$tmp_max
+  #
+  #   hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
+  #     chr = paste0("chr", chrX),
+  #     from = minBP, to = maxBP
+  #   )
+  #   hic_matrix <- as.matrix(intdata(hic_dat))
+  #
+  #   genes <- getBM(
+  #     attributes = c("hgnc_symbol", "start_position", "end_position"),
+  #     filters = c("chromosomal_region"), values = paste0(chrX, ":", minBP, ":", maxBP), mart = ensembl54
+  #   )
+  #   colnames(genes) <- c("Symbol", "Start", "End")
+  #
+  #   tads <- as.data.frame(tads_imr90)
+  #
+  #   ###########################################################################################
+  #
+  #   mat_layout <- matrix(c(1, 2, 3, 4, 1, 2, 3, 4), nrow = 4, ncol = 2)
+  #   layout(mat_layout, c(4, 4, 4, 4), c(2.25, 1.25, 0.5, 0.5))
+  #   par(mar = c(0.5, 4.5, 0.5, 0.5))
+  #
+  #   phic <- plotHic(hic_matrix,
+  #     chrom = paste0("chr", chrX),
+  #     chromstart = min(as.numeric(colnames(hic_matrix))),
+  #     chromend = max(as.numeric(colnames(hic_matrix))),
+  #     max_y = 20, zrange = c(0, 28),
+  #     palette = plot_color(),
+  #     flip = FALSE
+  #   )
+  #   labelgenome(
+  #     chrom = paste0("chr", chrX), chromstart = minBP, chromend = maxBP,
+  #     side = 1, scipen = 40, n = 1, scale = "bp"
+  #   )
+  #   addlegend(phic[[1]],
+  #     palette = phic[[2]], title = "score", side = "right", bottominset = 0.4,
+  #     topinset = 0, xoffset = -.035, labelside = "left", width = 0.025, title.offset = 0.035
+  #   )
+  #   mtext("HIC Intensities", side = 2, line = 1.75, cex = .75, font = 2)
+  #
+  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
+  #   segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
+  #   text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = plot_color()(n = nrow(genes), alpha = 0.7))
+  #   mtext("Genes", side = 2, line = 1.75, cex = .75, font = 2)
+  #
+  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
+  #   abline(v = ld[ld$is_query_snp == 0, ]$pos_hg38, col = "grey", lend = 1) # lwd=6
+  #   abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
+  #   mtext("LD", side = 2, line = 1.75, cex = .75, font = 2)
+  #
+  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
+  #   segments(
+  #     x0 = tads[tads$seqnames == paste0("chr", chrX), ]$start,
+  #     y0 = 0.5,
+  #     x1 = tads[tads$seqnames == paste0("chr", chrX), ]$end,
+  #     y1 = 0.5, lwd = 30,
+  #     col = plot_color()(n = nrow(genes), alpha = 0.7),
+  #     lend = 1
+  #   )
+  #   mtext("TADs", side = 2, line = 1.75, cex = .75, font = 2)
+  # },
+  # height = function(){session$clientData$output_megaPlot_width}
+  # )
+  output$megaPlot <- renderPlotly({
+
+    #####------------------------------------------------------------------------------------------
+    # pull in needed data pieces
+
     ld <- dat()
     chrX <- max(ld$chr, na.rm = TRUE)
 
@@ -437,8 +509,8 @@ function(input, output, session) {
     maxBP <- values$tmp_max
 
     hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
-      chr = paste0("chr", chrX),
-      from = minBP, to = maxBP
+                             chr = paste0("chr", chrX),
+                             from = minBP, to = maxBP
     )
     hic_matrix <- as.matrix(intdata(hic_dat))
 
@@ -450,51 +522,153 @@ function(input, output, session) {
 
     tads <- as.data.frame(tads_imr90)
 
-    ###########################################################################################
+    #####------------------------------------------------------------------------------------------
+    # create plot
 
-    mat_layout <- matrix(c(1, 2, 3, 4, 1, 2, 3, 4), nrow = 4, ncol = 2)
-    layout(mat_layout, c(4, 4, 4, 4), c(2.25, 1.25, 0.5, 0.5))
-    par(mar = c(0.5, 4.5, 0.5, 0.5))
+    ## create dataframe for plotting triangular heatmap
+    # determine number of bins
+    nbins = nrow(hic_matrix)
+    stepsize = abs(minBP - maxBP) / (2*nbins)
 
-    phic <- plotHic(hic_matrix,
-      chrom = paste0("chr", chrX),
-      chromstart = min(as.numeric(colnames(hic_matrix))),
-      chromend = max(as.numeric(colnames(hic_matrix))),
-      max_y = 20, zrange = c(0, 28),
-      palette = plot_color(),
-      flip = FALSE
-    )
-    labelgenome(
-      chrom = paste0("chr", chrX), chromstart = minBP, chromend = maxBP,
-      side = 1, scipen = 40, n = 1, scale = "bp"
-    )
-    addlegend(phic[[1]],
-      palette = phic[[2]], title = "score", side = "right", bottominset = 0.4,
-      topinset = 0, xoffset = -.035, labelside = "left", width = 0.025, title.offset = 0.035
-    )
-    mtext("HIC Intensities", side = 2, line = 1.75, cex = .75, font = 2)
+    # map to colors
+    hicmcol = matrix(maptocolors(hic_matrix,plot_color(),num=100,range=c(0,28)),
+                     nrow=nrow(hic_matrix))
 
-    plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-    segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
-    text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = plot_color()(n = nrow(genes), alpha = 0.7))
-    mtext("Genes", side = 2, line = 1.75, cex = .75, font = 2)
+    # make an empty tibble
+    tmp <- tibble(x=numeric(),y=numeric(),f=character(),g=character(),v=numeric())
 
-    plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-    abline(v = ld[ld$is_query_snp == 0, ]$pos_hg38, col = "grey", lend = 1) # lwd=6
-    abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
-    mtext("LD", side = 2, line = 1.75, cex = .75, font = 2)
+    for (i in (1:nrow(hic_matrix))){
+      y = -.5
 
-    plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-    segments(
-      x0 = tads[tads$seqnames == paste0("chr", chrX), ]$start,
-      y0 = 0.5,
-      x1 = tads[tads$seqnames == paste0("chr", chrX), ]$end,
-      y1 = 0.5, lwd = 30,
-      col = plot_color()(n = nrow(genes), alpha = 0.7),
-      lend = 1
-    )
-    mtext("TADs", side = 2, line = 1.75, cex = .75, font = 2)
-  })
+      x = minBP + (i * 2 * stepsize) - (stepsize * 2)
+      for (j in (i:ncol(hic_matrix))){
+        x = x + stepsize
+        y = y + .5
+
+        poly_dat <- tibble(
+          x = c(x-stepsize,x,x+stepsize,x),
+          y = c(y,y+.5,y,y-.5),
+          f = hicmcol[i,j],
+          g = paste0("bin_",i,"_",j),
+          v = hic_matrix[i,j]
+        )
+
+        tmp <-  bind_rows(tmp,poly_dat)
+      }
+    }
+    rm(i,j)
+
+    phic <- ggplot(tmp,aes(x=x, y=y, fill=f, text=paste0("Raw value: ",v))) +
+      geom_polygon(aes(group=g)) +
+      scale_fill_identity() +
+      coord_cartesian(xlim=c(minBP,maxBP)) +
+      ylim(0,(nbins*0.5)+1) +
+      guides(fill=FALSE) +
+      ylab("HIC Intensities") +
+      theme(axis.line=element_blank(),
+            axis.text.x=element_blank(),
+            axis.text.y=element_blank(),
+            axis.ticks=element_blank(),
+            axis.title.x=element_blank(),
+            legend.position="none",
+            panel.background=element_blank(),
+            panel.border=element_blank(),
+            panel.grid.major=element_blank(),
+            panel.grid.minor=element_blank(),
+            plot.background=element_blank())
+
+    pgene <- ggplot(genes) +
+      geom_rect(aes(xmin = Start, ymin = 0.1, xmax = End, ymax = 0.9,
+                    lwd = 30,
+                    text = paste0("Symbol: ",Symbol,"<br />",
+                                  "Start: ",Start,"<br />",
+                                  "End: ",End)),
+                fill = plot_color()(n = nrow(genes)), alpha = 0.7) +
+      coord_cartesian(xlim=c(minBP,maxBP)) +
+      ylim(0,1) +
+      guides(fill=FALSE, alpha = FALSE, size= FALSE) +
+      ylab("Genes") +
+      theme(axis.line=element_blank(),
+            axis.text.x=element_blank(),
+            axis.text.y=element_blank(),
+            axis.ticks=element_blank(),
+            axis.title.x=element_blank(),
+            legend.position="none",
+            panel.background=element_blank(),
+            panel.border=element_blank(),
+            panel.grid.major=element_blank(),
+            panel.grid.minor=element_blank(),
+            plot.background=element_blank())
+
+    psnp <- ggplot(ld) +
+      {if(nrow(ld[ld$is_query_snp==0,])>=1)geom_segment(aes(x = pos_hg38, y = 0,
+                       xend = pos_hg38, yend = 1,
+                       text=paste0("rsID: ",rsID,"<br />",
+                                   "Position: ",pos_hg38,"<br />",
+                                   "Ref/Alt: ",ref,"/",alt)),
+                   subset(ld, is_query_snp==0), color="grey") }+
+      geom_segment(aes(x = pos_hg38, y = 0,
+                       xend = pos_hg38, yend = 1,
+                       text=paste0("rsID: ",rsID,"<br />",
+                                   "Position: ",pos_hg38,"<br />",
+                                   "Ref/Alt: ",ref,"/",alt)),
+                   subset(ld, is_query_snp==1),
+                   color=plot_color()(n=nrow(ld[ld$is_query_snp==1,]))) +
+      coord_cartesian(xlim=c(minBP,maxBP)) +
+      ylim(0,1) +
+      guides(colour=FALSE, size= FALSE) +
+      ylab("SNPs") +
+      theme(axis.line=element_blank(),
+            axis.text.x=element_blank(),
+            axis.text.y=element_blank(),
+            axis.ticks=element_blank(),
+            axis.title.x=element_blank(),
+            legend.position="none",
+            panel.background=element_blank(),
+            panel.border=element_blank(),
+            panel.grid.major=element_blank(),
+            panel.grid.minor=element_blank(),
+            plot.background=element_blank())
+
+    # print(head(tads))
+
+    ptad <- ggplot(tads) +
+      geom_rect(aes(xmin = start, ymin = 0.1, xmax = end, ymax = 0.9,
+                    # color = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX),])),
+                    alpha = 0.7,
+                    lwd = 30, text=paste0(chrX,":",start,"-",end)),
+                subset(tads,tads$seqnames == paste0("chr", chrX)),
+                fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX),]))) +
+      coord_cartesian(xlim=c(minBP,maxBP)) +
+      ylim(0,1) +
+      guides(fill=FALSE, alpha = FALSE, size= FALSE) +
+      labs(x="BP",y="TADs") +
+      theme(axis.line.y=element_blank(),
+            axis.line.x=element_line(color="black"),
+            # axis.text.x=element_blank(),
+            axis.text.y=element_blank(),
+            axis.ticks.y=element_blank(),
+            axis.ticks.x=element_line(color="black"),
+            # axis.title.x=element_blank(),
+            # axis.title.y=element_blank(),
+            legend.position="none",
+            panel.background=element_blank(),
+            panel.border=element_blank(),
+            panel.grid.major=element_blank(),
+            panel.grid.minor=element_blank(),
+            plot.background=element_blank())
+
+    p1 <- hide_legend(ggplotly(phic, tooltip="text"))
+    p2 <- hide_legend(ggplotly(pgene, tooltip="text"))
+    p3 <- hide_legend(ggplotly(psnp, tooltip="text"))
+    p4 <- hide_legend(ggplotly(ptad, tooltip="text"))
+
+    megap <- subplot(p1,p2,p3,p4, nrows = 4, heights = c(0.7,0.1,0.1,0.1),
+                     shareY = TRUE, shareX = TRUE)
+
+
+  }
+  )
 
   output$plotDownload <- downloadHandler(
     filename = function() {

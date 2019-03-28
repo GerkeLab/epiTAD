@@ -257,9 +257,11 @@ function(request) {
           )
         )
       ),
-      fluidRow(
+      # fluidRow(
+      fillRow(
         tags$div(
-          class = "col-12 col-md-8 col-md-offset-2 col-lg-6 col-lg-offset-3",
+          # class = "col-12 col-md-8 col-md-offset-2 col-lg-6 col-lg-offset-3",
+          class = "col-12 col-md-10 col-md-offset-1 col-lg-8 col-lg-offset-2",
           tabBox(
             title = "Other", width = 12,
             tabPanel(
@@ -337,7 +339,8 @@ function(request) {
                 )
                 # plot controls panel group end ----
               ),
-              withSpinner(plotOutput("megaPlot", height = "450px"))
+              # withSpinner(plotOutput("megaPlot", height = "450px"))
+              withSpinner(plotlyOutput("megaPlot", height = "600px"))
             ),
             tabPanel(
               "Links",
