@@ -146,8 +146,8 @@ function(request) {
             box-shadow: 0 1px 3px rgba(0,0,0,.25);
             -webkit-box-shadow: 0 1px 3px rgba(0,0,0,.25);"
           )
-          )
-          ),
+        )
+      ),
       fluidRow(
         box(
           title = "Query SNPs", width = 4,
@@ -161,44 +161,10 @@ function(request) {
                     )
           ),
           tags$hr(),
-          # tags$div(
-          #   tags$div(
-          #     # source controls panel group ----
-          #     class = "panel-group", id = "source-controls", role = "tablist", "aria-multiselectable" = "true",
-          #     tags$div(
-          #       class = "panel panel-default",
-          #       tags$div(
-          #         # source controls panel heading ----
-          #         class = "panel-heading", role = "tab", id = "source-controls-heading",
-          #         tags$h5(
-          #           class = "panel-title",
-          #           tags$a("Source", href = "#source-controls-body",
-          #                  class = "collapsed", role = "button",
-          #                  "data-toggle" = "collapse", "data-parent" = "#source-controls",
-          #                  "aria-expanded" = "false", "aria-controls" = "source-controls-body")
-          #         )
-          #         # source controls panel heading end ----
-          #       ),
-          #       tags$div(
-          #         # source controls panel body wrapper ----
-          #         id = "source-controls-body", role = "tabpanel", "aria-labelledby" = "source-controls-heading",
-          #         class = "panel-collapse collapse",
-          #         tags$div(
-          #           # source controls panel body ----
-          #           class = "panel-body",
-                    fluidRow(
-                      # source controls input row ----
-                      column(6, selectInput("pop", "Population", INPUT_CHOICES$population, selected = "EUR")),
-                      column(6, sliderInput("value", "LD threshold", min = 0, max = 1, value = 0.8))
-            #           # source controls input row end ----
-            #         )
-            #         # source controls panel body end ----
-            #       )
-            #       # source controls panel body wrapper end ----
-            #     )
-            #   )
-            #   # source controls panel group end ----
-            # )
+
+          fluidRow(
+            column(6, selectInput("pop", "Population", INPUT_CHOICES$population, selected = "EUR")),
+            column(6, sliderInput("value", "LD threshold", min = 0, max = 1, value = 0.8))
           ),
           tags$hr(),
           tags$div(
@@ -234,81 +200,6 @@ function(request) {
           title = "", width = 8,
           tabPanel(
             "Figure",
-            # tags$div(
-            #   # plot controls panel group ----
-            #   class = "panel-group", id = "plot-controls", role = "tablist", "aria-multiselectable" = "true",
-            #   tags$div(
-            #     class = "panel panel-default",
-            #     tags$div(
-            #       # plot controls panel heading ----
-            #       class = "panel-heading", role = "tab", id = "plot-controls-heading",
-            #       tags$h5(
-            #         class = "panel-title",
-            #         tags$a("Plot Options", href = "#plot-controls-body",
-            #                class = "collapsed", role = "button",
-            #                "data-toggle" = "collapse", "data-parent" = "#plot-controls",
-            #                "aria-expanded" = "false", "aria-controls" = "plot-controls-body")
-            #       )
-            #       # plot controls panel heading end ----
-            #     ),
-            #     tags$div(
-            #       # plot controls panel body wrapper ----
-            #       id = "plot-controls-body", role = "tabpanel", "aria-labelledby" = "plot-controls-heading",
-            #       class = "panel-collapse collapse",
-            #       tags$div(
-            #         # plot controls panel body ----
-            #         class = "panel-body",
-            #         helpText("Coordinates must be at least 200000 BP apart"),
-            #         fluidRow(
-            #           # plot controls input row ----
-            #           column(4, numericInput("plotStartBP", label = "Starting Coordinates (BP)", value = 0)),
-            #           column(4, numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = 0)),
-            #           column(4,
-            #                  selectizeInput("plotColor", "Color Scheme",
-            #                                 choices = list(
-            #                                   "Viridis" = list(
-            #                                     "Viridis",
-            #                                     "Magma",
-            #                                     "Plasma",
-            #                                     "Inferno",
-            #                                     "Cividis"
-            #                                   ),
-            #                                   "Viridis Reversed" = list(
-            #                                     "Viridis (Reverse)" = "viridis rev",
-            #                                     "Magma (Reverse)" = "magma rev",
-            #                                     "Plasma (Reverse)" = "plasma rev",
-            #                                     "Inferno (Reverse)" = "inferno rev",
-            #                                     "Cividis (Reverse)" = "cividis rev"
-            #                                   ),
-            #                                   "Other Palettes" = list(
-            #                                     "Topo",
-            #                                     "Rainbow",
-            #                                     "Heat",
-            #                                     "Terrain",
-            #                                     "CM"
-            #                                   )
-            #                                 ), multiple = FALSE, selected = "Viridis"
-            #                  )
-            #           )
-            #           # plot controls input row end ----
-            #         ),
-            #         tags$div(
-            #           # plot-controls button group ----
-            #           class = "btn-group",
-            #           actionButton("updateBP", "Update Coordinates"),
-            #           actionButton("resetBP", "Reset Plot"),
-            #           actionButton("showgenes","Show gene names"),
-            #           downloadButton("plotDownload", "Download Plot")
-            #           # plot controls button group end ----
-            #         )
-            #         # plot controls panel body end ----
-            #       )
-            #       # plot controls panel body wrapper end ----
-            #     )
-            #   )
-            #   # plot controls panel group end ----
-            # ),
-            # withSpinner(plotOutput("megaPlot", height = "450px"))
             withSpinner(plotlyOutput("megaPlot", height = "600px")),
             tags$br(),
             tags$div(
@@ -591,6 +482,6 @@ function(request) {
           )
         )
       )
-        )
+    )
   )
 }
