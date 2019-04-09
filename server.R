@@ -37,7 +37,7 @@ function(input, output, session) {
     updateQueryString(url)
   })
 
-  DT:::DT2BSClass(c("stipe", "hover", "compact", "cell-border"))
+  DT:::DT2BSClass(c("stripe", "hover", "compact", "cell-border"))
 
   sample <- eventReactive(input$update1, {
     samplefile <- input$file1
