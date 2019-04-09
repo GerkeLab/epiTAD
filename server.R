@@ -52,8 +52,7 @@ function(input, output, session) {
       tryCatch(
         list(result = .f(...), error = NULL),
         error = function(e) {
-          if (!quiet)
-            message("Error: ", e$message)
+          if (!quiet) message("Error: ", e$message)
 
           list(result = NULL, error = if (is.null(error_msg)) e$message else error_msg)
         },
@@ -255,7 +254,7 @@ function(input, output, session) {
 
   output$eTable1 <- DT::renderDataTable({
     dat <- dat()
-    dat <- dat[dat$eQTL!=".",]
+    dat <- dat[dat$eQTL != ".", ]
     etest <- strsplit(as.character(dat$eQTL), ";")
     names(etest) <- dat$rsID
     etest2 <- unlist(strsplit(unlist(etest), ","))
@@ -267,9 +266,9 @@ function(input, output, session) {
     # Return table
     etest3 <- matrix(etest2, nrow = length(names(unlist(etest))), ncol = 4, byrow = TRUE)
     etest3 <- as.data.frame(etest3)
-    etest3 <- cbind(names(unlist(etest)),etest3)
-    colnames(etest3) <- c("SNP","Source", "Tissue", "Gene", "p")
-    etest3 <- etest3[!duplicated(etest3),]
+    etest3 <- cbind(names(unlist(etest)), etest3)
+    colnames(etest3) <- c("SNP", "Source", "Tissue", "Gene", "p")
+    etest3 <- etest3[!duplicated(etest3), ]
     epitad_datatable(etest3[etest3$Tissue %in% input$tissue, ])
   }, server = FALSE)
 
@@ -458,59 +457,61 @@ function(input, output, session) {
 
     ## create dataframe for plotting triangular heatmap
     # determine number of bins
-    nbins = nrow(hic_matrix)
-    stepsize = abs(minBP - maxBP) / (2*nbins)
+    nbins <- nrow(hic_matrix)
+    stepsize <- abs(minBP - maxBP) / (2 * nbins)
 
     # scale
     vec <- hic_matrix
-    vec[which(vec < 0)] = 0
-    vec[which(vec > 28)] = 28
-    breaks <- seq(0, 28,length.out=100)
+    vec[which(vec < 0)] <- 0
+    vec[which(vec > 28)] <- 28
+    breaks <- seq(0, 28, length.out = 100)
     cols_num <- c(0:length(breaks) + 1)
-    cols_vec = cut(vec, c(-Inf, breaks, Inf), labels=cols_num)
-    hicmcol = matrix(as.numeric(as.character(cols_vec)), nrow=nrow(hic_matrix))
+    cols_vec <- cut(vec, c(-Inf, breaks, Inf), labels = cols_num)
+    hicmcol <- matrix(as.numeric(as.character(cols_vec)), nrow = nrow(hic_matrix))
 
     # make an empty tibble
-    tmp <- tibble(x=numeric(),y=numeric(),f=numeric(),g=character(),v=numeric())
+    tmp <- tibble(x = numeric(), y = numeric(), f = numeric(), g = character(), v = numeric())
 
-    for (i in (1:nrow(hic_matrix))){
-      y = -.5
+    for (i in (1:nrow(hic_matrix))) {
+      y <- -.5
 
-      x = minBP + (i * 2 * stepsize) - (stepsize * 2)
-      for (j in (i:ncol(hic_matrix))){
-        x = x + stepsize
-        y = y + .5
+      x <- minBP + (i * 2 * stepsize) - (stepsize * 2)
+      for (j in (i:ncol(hic_matrix))) {
+        x <- x + stepsize
+        y <- y + .5
 
         poly_dat <- tibble(
-          x = c(x-stepsize,x,x+stepsize,x),
-          y = c(y,y+.5,y,y-.5),
-          f = hicmcol[i,j],
-          g = paste0("bin_",i,"_",j),
-          v = hic_matrix[i,j]
+          x = c(x - stepsize, x, x + stepsize, x),
+          y = c(y, y + .5, y, y - .5),
+          f = hicmcol[i, j],
+          g = paste0("bin_", i, "_", j),
+          v = hic_matrix[i, j]
         )
 
-        tmp <-  bind_rows(tmp,poly_dat)
+        tmp <- bind_rows(tmp, poly_dat)
       }
     }
-    rm(i,j)
+    rm(i, j)
 
-    phic <- ggplot(tmp,aes(x=x, y=y, text=paste0("Raw value: ",v))) +
-      geom_polygon(aes(fill=f, group=g)) +
-      scale_fill_gradientn(colors = plot_color()(n=100), name="Score") +
-      coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(0,(nbins*0.5)+1) +
+    phic <- ggplot(tmp, aes(x = x, y = y, text = paste0("Raw value: ", v))) +
+      geom_polygon(aes(fill = f, group = g)) +
+      scale_fill_gradientn(colors = plot_color()(n = 100), name = "Score") +
+      coord_cartesian(xlim = c(minBP, maxBP)) +
+      ylim(0, (nbins * 0.5) + 1) +
       ylab("HIC Intensities") +
-      theme(axis.line=element_blank(),
-            axis.text.x=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks=element_blank(),
-            axis.title.x=element_blank(),
-            legend.justification=c(1,1), legend.position=c(1,1),
-            panel.background=element_blank(),
-            panel.border=element_blank(),
-            panel.grid.major=element_blank(),
-            panel.grid.minor=element_blank(),
-            plot.background=element_blank())
+      theme(
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        legend.justification = c(1, 1), legend.position = c(1, 1),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank()
+      )
 
     pgene <- ggplot(genes) +
       geom_rect(aes(xmin = Start, ymin = 0.1, xmax = End, ymax = 0.9,
@@ -556,51 +557,57 @@ function(input, output, session) {
       ylim(0,1) +
       guides(colour=FALSE, size= FALSE) +
       ylab("SNPs") +
-      theme(axis.line=element_blank(),
-            axis.text.x=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks=element_blank(),
-            axis.title.x=element_blank(),
-            legend.position="none",
-            panel.background=element_blank(),
-            panel.border=element_blank(),
-            panel.grid.major=element_blank(),
-            panel.grid.minor=element_blank(),
-            plot.background=element_blank())
+      theme(
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        legend.position = "none",
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank()
+      )
 
     ptad <- ggplot(tads) +
-      geom_rect(aes(xmin = start, ymin = 0.1, xmax = end, ymax = 0.9,
-                    alpha = 0.7,
-                    lwd = 30, text=paste0(chrX,":",start,"-",end)),
-                subset(tads,tads$seqnames == paste0("chr", chrX)),
-                fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX),]))) +
-      coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(0,1) +
-      guides(fill=FALSE, alpha = FALSE, size= FALSE) +
-      labs(x="BP",y="TADs") +
-      theme(axis.line.y=element_blank(),
-            axis.line.x=element_line(color="black"),
-            axis.text.y=element_blank(),
-            axis.ticks.y=element_blank(),
-            axis.ticks.x=element_line(color="black"),
-            legend.position="none",
-            panel.background=element_blank(),
-            panel.border=element_blank(),
-            panel.grid.major=element_blank(),
-            panel.grid.minor=element_blank(),
-            plot.background=element_blank())
+      geom_rect(aes(
+        xmin = start, ymin = 0.1, xmax = end, ymax = 0.9,
+        alpha = 0.7,
+        lwd = 30, text = paste0(chrX, ":", start, "-", end)
+      ),
+      subset(tads, tads$seqnames == paste0("chr", chrX)),
+      fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]))
+      ) +
+      coord_cartesian(xlim = c(minBP, maxBP)) +
+      ylim(0, 1) +
+      guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+      labs(x = "BP", y = "TADs") +
+      theme(
+        axis.line.y = element_blank(),
+        axis.line.x = element_line(color = "black"),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.ticks.x = element_line(color = "black"),
+        legend.position = "none",
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank()
+      )
 
-    p1 <- ggplotly(phic, tooltip="text")
-    p2 <- hide_legend(ggplotly(pgene, tooltip="text"))
-    p3 <- hide_legend(ggplotly(psnp, tooltip="text"))
-    p4 <- hide_legend(ggplotly(ptad, tooltip="text"))
+    p1 <- ggplotly(phic, tooltip = "text")
+    p2 <- hide_legend(ggplotly(pgene, tooltip = "text"))
+    p3 <- hide_legend(ggplotly(psnp, tooltip = "text"))
+    p4 <- hide_legend(ggplotly(ptad, tooltip = "text"))
 
-    megap <- subplot(p1,p2,p3,p4, nrows = 4, heights = c(0.65,0.15,0.1,0.1),
-                     shareY = TRUE, shareX = TRUE)
-
-
-  }
-  )
+    megap <- subplot(p1, p2, p3, p4,
+                     nrows = 4, heights = c(0.65, 0.15, 0.1, 0.1),
+                     shareY = TRUE, shareX = TRUE
+    )
+  })
 
   output$plotDownload <- downloadHandler(
     filename = function() {
@@ -615,8 +622,8 @@ function(input, output, session) {
       maxBP <- values$tmp_max
 
       hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
-        chr = paste0("chr", chrX),
-        from = minBP, to = maxBP
+                               chr = paste0("chr", chrX),
+                               from = minBP, to = maxBP
       )
       hic_matrix <- as.matrix(intdata(hic_dat))
 
@@ -635,19 +642,19 @@ function(input, output, session) {
       par(mar = c(0.5, 4.5, 0.5, 0.5))
 
       phic <- plotHic(hic_matrix,
-        chrom = paste0("chr", chrX),
-        chromstart = min(as.numeric(colnames(hic_matrix))),
-        chromend = max(as.numeric(colnames(hic_matrix))),
-        max_y = 20, zrange = c(0, 28), palette = plot_color(),
-        flip = FALSE
+                      chrom = paste0("chr", chrX),
+                      chromstart = min(as.numeric(colnames(hic_matrix))),
+                      chromend = max(as.numeric(colnames(hic_matrix))),
+                      max_y = 20, zrange = c(0, 28), palette = plot_color(),
+                      flip = FALSE
       )
       labelgenome(
         chrom = paste0("chr", chrX), chromstart = minBP, chromend = maxBP,
         side = 1, scipen = 40, n = 1, scale = "bp"
       )
       addlegend(phic[[1]],
-        palette = phic[[2]], title = "score", side = "right", bottominset = 0.4,
-        topinset = 0, xoffset = -.035, labelside = "left", width = 0.025, title.offset = 0.035
+                palette = phic[[2]], title = "score", side = "right", bottominset = 0.4,
+                topinset = 0, xoffset = -.035, labelside = "left", width = 0.025, title.offset = 0.035
       )
       mtext("HIC Intensities", side = 2, line = 1.75, cex = .75, font = 2)
 
@@ -696,39 +703,42 @@ function(input, output, session) {
 
   observeEvent(input$btn_info, {
     modal_ui <- tagList(
-        tags$h4("App Details"),
-        tags$p(
-          "LD is calculated from", tags$a("1000 Genomes Phase 1",href="http://www.internationalgenome.org"),
-          "and queried from the", tags$a("HaploR",href="https://cran.r-project.org/web/packages/haploR/index.html"),
-          "interface to", tags$a("HaploReg.",href="http://archive.broadinstitute.org/mammals/haploreg/haploreg.php"),
-          "TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'.",
-          "eQTLs are taken from", tags$a("GTEx", href="https://gtexportal.org/home/"),
-          "and IMR90 Hi-C values are available from ",tags$a("GSE35156",href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE35156")
-        ),
-        tags$h4("Development Team"),
-        tags$p(
-          tags$strong("Programming:"), "Jordan Creed, Garrick Aden-Buie and Travis Gerke", tags$br(),
-          tags$strong("Scientific Input:"), "Alvaro Monteiro", tags$br(),
-          tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD"), tags$br(),
-          tags$strong("Github:"), tags$a(href = "https://github.com/GerkeLab/epiTAD", "https://github.com/GerkeLab/epiTAD")
-        ),
-        tags$h4("Other resources"),
-        tags$ul(
-          tags$li(tags$a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")),
-          tags$li(tags$a("Yue Lab 3D Genome Browser", href = "http://promoter.bx.psu.edu", target = "_blank")),
-          tags$li(tags$a("CHiCP", href="https://www.chicp.org", target = "_blank")),
-          tags$li(tags$a("HiGlass", href="http://gehlenborglab.org/research/projects/higlass/", target = "_blank"))
-        ),
+      tags$h4("App Details"),
+      tags$p(
+        "LD is calculated from", tags$a("1000 Genomes Phase 1", href = "http://www.internationalgenome.org"),
+        "and queried from the", tags$a("HaploR", href = "https://cran.r-project.org/web/packages/haploR/index.html"),
+        "interface to", tags$a("HaploReg.", href = "http://archive.broadinstitute.org/mammals/haploreg/haploreg.php"),
+        "TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'.",
+        "eQTLs are taken from", tags$a("GTEx", href = "https://gtexportal.org/home/"),
+        "and IMR90 Hi-C values are available from ", tags$a("GSE35156", href = "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE35156")
+      ),
+      tags$h4("Development Team"),
+      tags$p(
+        tags$strong("Programming:"), "Jordan Creed, Garrick Aden-Buie and Travis Gerke", tags$br(),
+        tags$strong("Scientific Input:"), "Alvaro Monteiro", tags$br(),
+        tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD"), tags$br(),
+        tags$strong("Github:"), tags$a(href = "https://github.com/GerkeLab/epiTAD", "https://github.com/GerkeLab/epiTAD")
+      ),
+      tags$h4("Other resources"),
+      tags$ul(
+        tags$li(tags$a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")),
+        tags$li(tags$a("Yue Lab 3D Genome Browser", href = "http://promoter.bx.psu.edu", target = "_blank")),
+        tags$li(tags$a("CHiCP", href = "https://www.chicp.org", target = "_blank")),
+        tags$li(tags$a("HiGlass", href = "http://gehlenborglab.org/research/projects/higlass/", target = "_blank"))
+      ),
       tags$h4("Notes"),
       tags$p(
         "If no SNPs are in LD above the specified threshold then a range of 53500 BP is applied to",
         "either side of the SNP. If SNPs in LD exist, then the range is set to the smallest region",
         "which covers of all genomic locations in LD with the queried SNP(s) and the TAD region.",
-        "This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser.")
+        "This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser."
+      )
     )
 
-    showModal(modalDialog(title = "App Information", modal_ui,
-                          footer = modalButton("OK"), easyClose = TRUE))
+    showModal(modalDialog(
+      title = "App Information", modal_ui,
+      footer = modalButton("OK"), easyClose = TRUE
+    ))
   })
 
   observe({
@@ -781,19 +791,20 @@ function(input, output, session) {
       # Return table
       etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
       etest3 <- as.data.frame(etest3)
-      etest3 <- cbind(x[x$eQTL!=".",]$rsID,etest3)
-      colnames(etest3) <- c("SNP","Source", "Tissue", "Gene", "p")
-      etest3 <- etest3[!duplicated(etest3),]
+      etest3 <- cbind(x[x$eQTL != ".", ]$rsID, etest3)
+      colnames(etest3) <- c("SNP", "Source", "Tissue", "Gene", "p")
+      etest3 <- etest3[!duplicated(etest3), ]
       etest3 <- etest3[etest3$Tissue %in% input$tissue, ]
 
-      writexl::write_xlsx(list("haploreg" = haploReg_table,
-                               "regulome" = regulomeDB_table,
-                               "ENSEMBL" = genes,
-                               "ONCOTATOR" = onco,
-                               "eQTL" = etest3),
-                          path=file)
-
+      writexl::write_xlsx(list(
+        "haploreg" = haploReg_table,
+        "regulome" = regulomeDB_table,
+        "ENSEMBL" = genes,
+        "ONCOTATOR" = onco,
+        "eQTL" = etest3
+      ),
+      path = file
+      )
     }
   )
-
 }
