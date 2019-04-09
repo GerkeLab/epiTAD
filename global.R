@@ -9,7 +9,8 @@ library(Sushi)
 library(HiTC)
 library(colorspace)
 library(writexl)
-library(tidyverse)
+library(dplyr)
+library(ggplot2)
 library(plotly)
 
 # Global Data
