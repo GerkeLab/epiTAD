@@ -13,6 +13,9 @@ RUN Rscript -e "install.packages(c('BiocManager', 'shinydashboard', 'data.table'
 RUN Rscript -e "BiocManager::install(c('haploR', 'HiTC', 'Sushi', 'biomaRt'))" \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
+RUN Rscript -e "install.packages(c('writexl', 'plotly'))" \
+  && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
+
 ARG SHINY_APP_IDLE_TIMEOUT=0
 RUN sed -i "s/directory_index on;/app_idle_timeout ${SHINY_APP_IDLE_TIMEOUT};/g" /etc/shiny-server/shiny-server.conf
 
