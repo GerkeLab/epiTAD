@@ -255,18 +255,22 @@ function(input, output, session) {
 
   output$eTable1 <- DT::renderDataTable({
     dat <- dat()
-    etest <- unlist(strsplit(as.character(dat$eQTL), ";"))
-    etest <- etest[!etest %in% c(".")]
-    etest2 <- unlist(strsplit(etest, ","))
+    dat <- dat[dat$eQTL!=".",]
+    # etest <- unlist(strsplit(as.character(dat$eQTL), ";"))
+    etest <- strsplit(as.character(dat$eQTL), ";")
+    names(etest) <- dat$rsID
+    # etest <- etest[!etest %in% c(".")]
+    etest2 <- unlist(strsplit(unlist(etest), ","))
 
     # Check inputs and that there are eQTLs for these SNPs
     shiny::validate(need(etest2, "No statistically significant eQTLs were reported with these SNPs."))
-    shiny::validate(need(input$tissue, "Please select desired Tissues from the eQTL tab in the 'Select Output' box."))
+    shiny::validate(need(input$tissue, "Please select desired Tissues from the above dropdown."))
 
     # Return table
-    etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
+    etest3 <- matrix(etest2, nrow = length(names(unlist(etest))), ncol = 4, byrow = TRUE)
     etest3 <- as.data.frame(etest3)
-    etest3 <- cbind(dat[dat$eQTL!=".",]$rsID,etest3)
+    # etest3 <- cbind(dat[dat$eQTL!=".",]$rsID,etest3)
+    etest3 <- cbind(names(unlist(etest)),etest3)
     colnames(etest3) <- c("SNP","Source", "Tissue", "Gene", "p")
     etest3 <- etest3[!duplicated(etest3),]
     epitad_datatable(etest3[etest3$Tissue %in% input$tissue, ])
@@ -531,11 +535,21 @@ function(input, output, session) {
     stepsize = abs(minBP - maxBP) / (2*nbins)
 
     # map to colors
-    hicmcol = matrix(maptocolors(hic_matrix,plot_color(),num=100,range=c(0,28)),
-                     nrow=nrow(hic_matrix))
+    # hicmcol = matrix(maptocolors(hic_matrix,plot_color(),num=100,range=c(0,28)),
+    #                  nrow=nrow(hic_matrix))
+
+    # scale
+    vec <- hic_matrix
+    vec[which(vec < 0)] = 0
+    vec[which(vec > 28)] = 28
+    breaks <- seq(0, 28,length.out=100)
+    cols_num <- c(0:length(breaks) + 1)
+    cols_vec = cut(vec, c(-Inf, breaks, Inf), labels=cols_num)
+    hicmcol = matrix(as.numeric(as.character(cols_vec)), nrow=nrow(hic_matrix))
 
     # make an empty tibble
-    tmp <- tibble(x=numeric(),y=numeric(),f=character(),g=character(),v=numeric())
+    # tmp <- tibble(x=numeric(),y=numeric(),f=character(),g=character(),v=numeric())
+    tmp <- tibble(x=numeric(),y=numeric(),f=numeric(),g=character(),v=numeric())
 
     for (i in (1:nrow(hic_matrix))){
       y = -.5
@@ -558,19 +572,23 @@ function(input, output, session) {
     }
     rm(i,j)
 
-    phic <- ggplot(tmp,aes(x=x, y=y, fill=f, text=paste0("Raw value: ",v))) +
-      geom_polygon(aes(group=g)) +
-      scale_fill_identity() +
+    # tmp$v <- scale(tmp$v)
+
+    phic <- ggplot(tmp,aes(x=x, y=y, text=paste0("Raw value: ",v))) +
+      geom_polygon(aes(fill=f, group=g)) +
+      # scale_fill_identity() +
+      # scale_fill_continuous(name="Score") +
+      scale_fill_gradientn(colors = plot_color()(n=100), name="Score") +
       coord_cartesian(xlim=c(minBP,maxBP)) +
       ylim(0,(nbins*0.5)+1) +
-      guides(fill=FALSE) +
+      # guides(fill=guide_legend(title="Score"))
       ylab("HIC Intensities") +
       theme(axis.line=element_blank(),
             axis.text.x=element_blank(),
             axis.text.y=element_blank(),
             axis.ticks=element_blank(),
             axis.title.x=element_blank(),
-            legend.position="none",
+            legend.justification=c(1,1), legend.position=c(1,1),
             panel.background=element_blank(),
             panel.border=element_blank(),
             panel.grid.major=element_blank(),
@@ -584,8 +602,11 @@ function(input, output, session) {
                                   "Start: ",Start,"<br />",
                                   "End: ",End)),
                 fill = plot_color()(n = nrow(genes)), alpha = 0.7) +
+      {if(!(input$showgenes %in% seq(1,100,by=2))) geom_text(aes(x = (Start+End)/2, y = rep(c(1.05,-0.05), length.out=nrow(genes)),
+                                           label=Symbol),
+                                       color = plot_color()(n = nrow(genes)), size = 3)} +
       coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(0,1) +
+      ylim(-0.2,1.2) +
       guides(fill=FALSE, alpha = FALSE, size= FALSE) +
       ylab("Genes") +
       theme(axis.line=element_blank(),
@@ -658,12 +679,13 @@ function(input, output, session) {
             panel.grid.minor=element_blank(),
             plot.background=element_blank())
 
-    p1 <- hide_legend(ggplotly(phic, tooltip="text"))
+    # p1 <- hide_legend(ggplotly(phic, tooltip="text"))
+    p1 <- ggplotly(phic, tooltip="text")
     p2 <- hide_legend(ggplotly(pgene, tooltip="text"))
     p3 <- hide_legend(ggplotly(psnp, tooltip="text"))
     p4 <- hide_legend(ggplotly(ptad, tooltip="text"))
 
-    megap <- subplot(p1,p2,p3,p4, nrows = 4, heights = c(0.7,0.1,0.1,0.1),
+    megap <- subplot(p1,p2,p3,p4, nrows = 4, heights = c(0.65,0.15,0.1,0.1),
                      shareY = TRUE, shareX = TRUE)
 
 

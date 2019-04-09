@@ -1,4 +1,3 @@
-
 # UI Options --------------------------------------------------------------
 
 # Set default color and type for shinycssloaders
@@ -147,11 +146,11 @@ function(request) {
             box-shadow: 0 1px 3px rgba(0,0,0,.25);
             -webkit-box-shadow: 0 1px 3px rgba(0,0,0,.25);"
           )
-        )
-      ),
+          )
+          ),
       fluidRow(
         box(
-          title = "Query SNPs",
+          title = "Query SNPs", width = 4,
           textInput("snpList", "Enter SNP rsIDs (comma separated)", value = "", placeholder = "rs123, rs5574"),
           h5(helpText("Upload SNP List (one SNP per line)")),
           fileInput("file1", "Choose a file",
@@ -160,6 +159,46 @@ function(request) {
                       "text/comma-separated-values,text/plain",
                       ".csv"
                     )
+          ),
+          tags$hr(),
+          # tags$div(
+          #   tags$div(
+          #     # source controls panel group ----
+          #     class = "panel-group", id = "source-controls", role = "tablist", "aria-multiselectable" = "true",
+          #     tags$div(
+          #       class = "panel panel-default",
+          #       tags$div(
+          #         # source controls panel heading ----
+          #         class = "panel-heading", role = "tab", id = "source-controls-heading",
+          #         tags$h5(
+          #           class = "panel-title",
+          #           tags$a("Source", href = "#source-controls-body",
+          #                  class = "collapsed", role = "button",
+          #                  "data-toggle" = "collapse", "data-parent" = "#source-controls",
+          #                  "aria-expanded" = "false", "aria-controls" = "source-controls-body")
+          #         )
+          #         # source controls panel heading end ----
+          #       ),
+          #       tags$div(
+          #         # source controls panel body wrapper ----
+          #         id = "source-controls-body", role = "tabpanel", "aria-labelledby" = "source-controls-heading",
+          #         class = "panel-collapse collapse",
+          #         tags$div(
+          #           # source controls panel body ----
+          #           class = "panel-body",
+                    fluidRow(
+                      # source controls input row ----
+                      column(6, selectInput("pop", "Population", INPUT_CHOICES$population, selected = "EUR")),
+                      column(6, sliderInput("value", "LD threshold", min = 0, max = 1, value = 0.8))
+            #           # source controls input row end ----
+            #         )
+            #         # source controls panel body end ----
+            #       )
+            #       # source controls panel body wrapper end ----
+            #     )
+            #   )
+            #   # source controls panel group end ----
+            # )
           ),
           tags$hr(),
           tags$div(
@@ -186,36 +225,176 @@ function(request) {
               )
             ),
             actionButton("btn_info", "", icon = icon("info"),
-                       "data-toggle" = "tooltip", "data-placement" = "right",
-                       title = "Learn more about epiTAD"),
+                         "data-toggle" = "tooltip", "data-placement" = "right",
+                         title = "Learn more about epiTAD"),
             bookmarkButton(class = "pull-right")
           )
         ),
         tabBox(
-          title = "Select Output",
+          title = "", width = 8,
           tabPanel(
-            "Source",
-            selectInput("pop", "Population", INPUT_CHOICES$population, selected = "EUR"),
-            sliderInput("value", "LD threshold", min = 0, max = 1, value = 0.8)
+            "Figure",
+            # tags$div(
+            #   # plot controls panel group ----
+            #   class = "panel-group", id = "plot-controls", role = "tablist", "aria-multiselectable" = "true",
+            #   tags$div(
+            #     class = "panel panel-default",
+            #     tags$div(
+            #       # plot controls panel heading ----
+            #       class = "panel-heading", role = "tab", id = "plot-controls-heading",
+            #       tags$h5(
+            #         class = "panel-title",
+            #         tags$a("Plot Options", href = "#plot-controls-body",
+            #                class = "collapsed", role = "button",
+            #                "data-toggle" = "collapse", "data-parent" = "#plot-controls",
+            #                "aria-expanded" = "false", "aria-controls" = "plot-controls-body")
+            #       )
+            #       # plot controls panel heading end ----
+            #     ),
+            #     tags$div(
+            #       # plot controls panel body wrapper ----
+            #       id = "plot-controls-body", role = "tabpanel", "aria-labelledby" = "plot-controls-heading",
+            #       class = "panel-collapse collapse",
+            #       tags$div(
+            #         # plot controls panel body ----
+            #         class = "panel-body",
+            #         helpText("Coordinates must be at least 200000 BP apart"),
+            #         fluidRow(
+            #           # plot controls input row ----
+            #           column(4, numericInput("plotStartBP", label = "Starting Coordinates (BP)", value = 0)),
+            #           column(4, numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = 0)),
+            #           column(4,
+            #                  selectizeInput("plotColor", "Color Scheme",
+            #                                 choices = list(
+            #                                   "Viridis" = list(
+            #                                     "Viridis",
+            #                                     "Magma",
+            #                                     "Plasma",
+            #                                     "Inferno",
+            #                                     "Cividis"
+            #                                   ),
+            #                                   "Viridis Reversed" = list(
+            #                                     "Viridis (Reverse)" = "viridis rev",
+            #                                     "Magma (Reverse)" = "magma rev",
+            #                                     "Plasma (Reverse)" = "plasma rev",
+            #                                     "Inferno (Reverse)" = "inferno rev",
+            #                                     "Cividis (Reverse)" = "cividis rev"
+            #                                   ),
+            #                                   "Other Palettes" = list(
+            #                                     "Topo",
+            #                                     "Rainbow",
+            #                                     "Heat",
+            #                                     "Terrain",
+            #                                     "CM"
+            #                                   )
+            #                                 ), multiple = FALSE, selected = "Viridis"
+            #                  )
+            #           )
+            #           # plot controls input row end ----
+            #         ),
+            #         tags$div(
+            #           # plot-controls button group ----
+            #           class = "btn-group",
+            #           actionButton("updateBP", "Update Coordinates"),
+            #           actionButton("resetBP", "Reset Plot"),
+            #           actionButton("showgenes","Show gene names"),
+            #           downloadButton("plotDownload", "Download Plot")
+            #           # plot controls button group end ----
+            #         )
+            #         # plot controls panel body end ----
+            #       )
+            #       # plot controls panel body wrapper end ----
+            #     )
+            #   )
+            #   # plot controls panel group end ----
+            # ),
+            # withSpinner(plotOutput("megaPlot", height = "450px"))
+            withSpinner(plotlyOutput("megaPlot", height = "600px")),
+            tags$br(),
+            tags$div(
+              # plot controls panel group ----
+              class = "panel-group", id = "plot-controls", role = "tablist", "aria-multiselectable" = "true",
+              tags$div(
+                class = "panel panel-default",
+                tags$div(
+                  # plot controls panel heading ----
+                  class = "panel-heading", role = "tab", id = "plot-controls-heading",
+                  tags$h5(
+                    class = "panel-title",
+                    tags$a("Plot Options", href = "#plot-controls-body",
+                           class = "collapsed", role = "button",
+                           "data-toggle" = "collapse", "data-parent" = "#plot-controls",
+                           "aria-expanded" = "false", "aria-controls" = "plot-controls-body")
+                  )
+                  # plot controls panel heading end ----
+                ),
+                tags$div(
+                  # plot controls panel body wrapper ----
+                  id = "plot-controls-body", role = "tabpanel", "aria-labelledby" = "plot-controls-heading",
+                  class = "panel-collapse collapse",
+                  tags$div(
+                    # plot controls panel body ----
+                    class = "panel-body",
+                    helpText("Coordinates must be at least 200000 BP apart"),
+                    fluidRow(
+                      # plot controls input row ----
+                      column(4, numericInput("plotStartBP", label = "Starting Coordinates (BP)", value = 0)),
+                      column(4, numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = 0)),
+                      column(4,
+                             selectizeInput("plotColor", "Color Scheme",
+                                            choices = list(
+                                              "Viridis" = list(
+                                                "Viridis",
+                                                "Magma",
+                                                "Plasma",
+                                                "Inferno",
+                                                "Cividis"
+                                              ),
+                                              "Viridis Reversed" = list(
+                                                "Viridis (Reverse)" = "viridis rev",
+                                                "Magma (Reverse)" = "magma rev",
+                                                "Plasma (Reverse)" = "plasma rev",
+                                                "Inferno (Reverse)" = "inferno rev",
+                                                "Cividis (Reverse)" = "cividis rev"
+                                              ),
+                                              "Other Palettes" = list(
+                                                "Topo",
+                                                "Rainbow",
+                                                "Heat",
+                                                "Terrain",
+                                                "CM"
+                                              )
+                                            ), multiple = FALSE, selected = "Viridis"
+                             )
+                      )
+                      # plot controls input row end ----
+                    ),
+                    tags$div(
+                      # plot-controls button group ----
+                      class = "btn-group",
+                      actionButton("updateBP", "Update Coordinates"),
+                      actionButton("resetBP", "Reset Plot"),
+                      actionButton("showgenes","Show gene names"),
+                      downloadButton("plotDownload", "Download Plot")
+                      # plot controls button group end ----
+                    )
+                    # plot controls panel body end ----
+                  )
+                  # plot controls panel body wrapper end ----
+                )
+              )
+              # plot controls panel group end ----
+            )
           ),
           tabPanel(
-            "HaploReg",
-            checkboxGroupInput("parameters", "HaploR", INPUT_CHOICES$HaploR, inline = TRUE, selected = c("query_snp_rsid", "pos_hg38", "r2"))
+            "Links",
+            uiOutput("clinical1"),
+            uiOutput("ucsc1")
           ),
           tabPanel(
-            "RegulomeDB",
-            checkboxGroupInput("parameters2", "Regulome", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate","score"))
-          ),
-          tabPanel(
-            "eQTL",
-            uiOutput("eTissues")
-          ),
-          tabPanel(
-            "Oncotator",
-            checkboxGroupInput("oncoParameters1", "General", INPUT_CHOICES$onco$general, inline = TRUE),
-            checkboxGroupInput("oncoParameters2", "Cancer Gene Census", INPUT_CHOICES$onco$cancer_gene_census, inline = TRUE),
-            checkboxGroupInput("oncoParameters3", "HUGO Gene Nomenclature Committee", INPUT_CHOICES$onco$hugo_gene_nomenclature, inline = TRUE),
-            checkboxGroupInput("oncoParameters4", "UniProt", INPUT_CHOICES$onco$uniprot, inline = TRUE)
+            "Download",
+            tags$p("Use the button below to download all tables in a single excel file"),
+            downloadButton("download_all", "Download all")
           )
         )
       ),
@@ -224,10 +403,88 @@ function(request) {
           title = "Variant Annotation",
           tabPanel(
             "HaploReg",
+            tags$div(
+              tags$div(
+                # haploreg controls panel group ----
+                class = "panel-group", id = "haploreg-controls", role = "tablist", "aria-multiselectable" = "true",
+                tags$div(
+                  class = "panel panel-default",
+                  tags$div(
+                    # haploreg controls panel heading ----
+                    class = "panel-heading", role = "tab", id = "haploreg-controls-heading",
+                    tags$h5(
+                      class = "panel-title",
+                      tags$a("Additional annotations", href = "#haploreg-controls-body",
+                             class = "collapsed", role = "button",
+                             "data-toggle" = "collapse", "data-parent" = "#haploreg-controls",
+                             "aria-expanded" = "false", "aria-controls" = "haploreg-controls-body")
+                    )
+                    # haploreg controls panel heading end ----
+                  ),
+                  tags$div(
+                    # haploreg controls panel body wrapper ----
+                    id = "haploreg-controls-body", role = "tabpanel", "aria-labelledby" = "haploreg-controls-heading",
+                    class = "panel-collapse collapse",
+                    tags$div(
+                      # haploreg controls panel body ----
+                      class = "panel-body",
+                      fluidRow(
+                        # haploreg controls input row ----
+                        column(12, checkboxGroupInput("parameters", "", INPUT_CHOICES$HaploR, inline = TRUE, selected = c("query_snp_rsid", "pos_hg38", "r2")))
+                        # haploreg controls input row end ----
+                      )
+                      # haploreg controls panel body end ----
+                    )
+                    # haploreg controls panel body wrapper end ----
+                  )
+                )
+                # haploreg controls panel group end ----
+              )
+            ),
+            tags$hr(),
             withSpinner(DT::dataTableOutput("LDtable1"), proxy.height = "100px")
           ),
           tabPanel(
             "RegulomeDB",
+            tags$div(
+              tags$div(
+                # regulomedb controls panel group ----
+                class = "panel-group", id = "regulomedb-controls", role = "tablist", "aria-multiselectable" = "true",
+                tags$div(
+                  class = "panel panel-default",
+                  tags$div(
+                    # regulomedb controls panel heading ----
+                    class = "panel-heading", role = "tab", id = "regulomedb-controls-heading",
+                    tags$h5(
+                      class = "panel-title",
+                      tags$a("Remove annotations", href = "#regulomedb-controls-body",
+                             class = "collapsed", role = "button",
+                             "data-toggle" = "collapse", "data-parent" = "#regulomedb-controls",
+                             "aria-expanded" = "false", "aria-controls" = "regulomedb-controls-body")
+                    )
+                    # regulomedb controls panel heading end ----
+                  ),
+                  tags$div(
+                    # regulome controls panel body wrapper ----
+                    id = "regulomedb-controls-body", role = "tabpanel", "aria-labelledby" = "regulomedb-controls-heading",
+                    class = "panel-collapse collapse",
+                    tags$div(
+                      # regulome controls panel body ----
+                      class = "panel-body",
+                      fluidRow(
+                        # regulome controls input row ----
+                        column(12, checkboxGroupInput("parameters2", "", INPUT_CHOICES$regulome, selected = c("#chromosome", "coordinate","score")))
+                        # regulomedb controls input row end ----
+                      )
+                      # regulomedb controls panel body end ----
+                    )
+                    # regulomedb controls panel body wrapper end ----
+                  )
+                )
+                # regulomedb controls panel group end ----
+              )
+            ),
+            tags$hr(),
             withSpinner(DT::dataTableOutput("LDtable2"), proxy.height = "100px")
           ),
           tabPanel(
@@ -245,10 +502,87 @@ function(request) {
           ),
           tabPanel(
             "Oncotator",
+            tags$div(
+              tags$div(
+                # oncotator controls panel group ----
+                class = "panel-group", id = "oncotator-controls", role = "tablist", "aria-multiselectable" = "true",
+                tags$div(
+                  class = "panel panel-default",
+                  tags$div(
+                    # oncotator controls panel heading ----
+                    class = "panel-heading", role = "tab", id = "oncotator-controls-heading",
+                    tags$h5(
+                      class = "panel-title",
+                      tags$a("Additional annotations", href = "#oncotator-controls-body",
+                             class = "collapsed", role = "button",
+                             "data-toggle" = "collapse", "data-parent" = "#oncotator-controls",
+                             "aria-expanded" = "false", "aria-controls" = "oncotator-controls-body")
+                    )
+                    # oncotator controls panel heading end ----
+                  ),
+                  tags$div(
+                    # oncotator controls panel body wrapper ----
+                    id = "oncotator-controls-body", role = "tabpanel", "aria-labelledby" = "oncotator-controls-heading",
+                    class = "panel-collapse collapse",
+                    tags$div(
+                      # oncotator controls panel body ----
+                      class = "panel-body",
+                      checkboxGroupInput("oncoParameters1", "General", INPUT_CHOICES$onco$general, inline = TRUE),
+                      checkboxGroupInput("oncoParameters2", "Cancer Gene Census", INPUT_CHOICES$onco$cancer_gene_census, inline = TRUE),
+                      checkboxGroupInput("oncoParameters3", "HUGO Gene Nomenclature Committee", INPUT_CHOICES$onco$hugo_gene_nomenclature, inline = TRUE),
+                      checkboxGroupInput("oncoParameters4", "UniProt", INPUT_CHOICES$onco$uniprot, inline = TRUE)
+                      # oncotator controls panel body end ----
+                    )
+                    # oncotator controls panel body wrapper end ----
+                  )
+                )
+                # oncotator controls panel group end ----
+              )
+            ),
+            tags$hr(),
             withSpinner(DT::dataTableOutput("oncoTable"), proxy.height = "100px")
           ),
           tabPanel(
             "eQTL",
+            tags$div(
+              tags$div(
+                # eqtl controls panel group ----
+                class = "panel-group", id = "eqtl-controls", role = "tablist", "aria-multiselectable" = "true",
+                tags$div(
+                  class = "panel panel-default",
+                  tags$div(
+                    # eqtl controls panel heading ----
+                    class = "panel-heading", role = "tab", id = "eqtl-controls-heading",
+                    tags$h5(
+                      class = "panel-title",
+                      tags$a("Tissues", href = "#eqtl-controls-body",
+                             class = "collapsed", role = "button",
+                             "data-toggle" = "collapse", "data-parent" = "#eqtl-controls",
+                             "aria-expanded" = "false", "aria-controls" = "eqtl-controls-body")
+                    )
+                    # eqtl controls panel heading end ----
+                  ),
+                  tags$div(
+                    # eqtl controls panel body wrapper ----
+                    id = "eqtl-controls-body", role = "tabpanel", "aria-labelledby" = "eqtl-controls-heading",
+                    class = "panel-collapse collapse",
+                    tags$div(
+                      # eqtl controls panel body ----
+                      class = "panel-body",
+                      fluidRow(
+                        # eqtl controls input row ----
+                        column(12,uiOutput("eTissues"))
+                        # eqtl controls input row end ----
+                      )
+                      # eqtl controls panel body end ----
+                    )
+                    # eqtl controls panel body wrapper end ----
+                  )
+                )
+                # eqtl controls panel group end ----
+              )
+            ),
+            tags$hr(),
             tags$div(
               style = "min-height: 1.5em",
               DT::dataTableOutput("eTable1")
@@ -256,105 +590,7 @@ function(request) {
             uiOutput("eqtl1")
           )
         )
-      ),
-      # fluidRow(
-      fillRow(
-        tags$div(
-          # class = "col-12 col-md-8 col-md-offset-2 col-lg-6 col-lg-offset-3",
-          class = "col-12 col-md-10 col-md-offset-1 col-lg-8 col-lg-offset-2",
-          tabBox(
-            title = "Other", width = 12,
-            tabPanel(
-              "Figure",
-              tags$div(
-                # plot controls panel group ----
-                class = "panel-group", id = "plot-controls", role = "tablist", "aria-multiselectable" = "true",
-                tags$div(
-                  class = "panel panel-default",
-                  tags$div(
-                    # plot controls panel heading ----
-                    class = "panel-heading", role = "tab", id = "plot-controls-heading",
-                    tags$h5(
-                      class = "panel-title",
-                      tags$a("Plot Options", href = "#plot-controls-body",
-                             class = "collapsed", role = "button",
-                             "data-toggle" = "collapse", "data-parent" = "#plot-controls",
-                             "aria-expanded" = "false", "aria-controls" = "plot-controls-body")
-                    )
-                    # plot controls panel heading end ----
-                  ),
-                  tags$div(
-                    # plot controls panel body wrapper ----
-                    id = "plot-controls-body", role = "tabpanel", "aria-labelledby" = "plot-controls-heading",
-                    class = "panel-collapse collapse",
-                    tags$div(
-                      # plot controls panel body ----
-                      class = "panel-body",
-                      helpText("Coordinates must be at least 200000 BP apart"),
-                      fluidRow(
-                        # plot controls input row ----
-                        column(4, numericInput("plotStartBP", label = "Starting Coordinates (BP)", value = 0)),
-                        column(4, numericInput("plotEndBP", label = "Ending Coordinates (BP)", value = 0)),
-                        column(4,
-                               selectizeInput("plotColor", "Color Scheme",
-                                              choices = list(
-                                                "Viridis" = list(
-                                                  "Viridis",
-                                                  "Magma",
-                                                  "Plasma",
-                                                  "Inferno",
-                                                  "Cividis"
-                                                ),
-                                                "Viridis Reversed" = list(
-                                                  "Viridis (Reverse)" = "viridis rev",
-                                                  "Magma (Reverse)" = "magma rev",
-                                                  "Plasma (Reverse)" = "plasma rev",
-                                                  "Inferno (Reverse)" = "inferno rev",
-                                                  "Cividis (Reverse)" = "cividis rev"
-                                                ),
-                                                "Other Palettes" = list(
-                                                  "Topo",
-                                                  "Rainbow",
-                                                  "Heat",
-                                                  "Terrain",
-                                                  "CM"
-                                                )
-                                              ), multiple = FALSE, selected = "Viridis"
-                               )
-                        )
-                        # plot controls input row end ----
-                      ),
-                      tags$div(
-                        # plot-controls button group ----
-                        class = "btn-group",
-                        actionButton("updateBP", "Update Coordinates"),
-                        actionButton("resetBP", "Reset Plot"),
-                        downloadButton("plotDownload", "Download Plot")
-                        # plot controls button group end ----
-                      )
-                      # plot controls panel body end ----
-                    )
-                    # plot controls panel body wrapper end ----
-                  )
-                )
-                # plot controls panel group end ----
-              ),
-              # withSpinner(plotOutput("megaPlot", height = "450px"))
-              withSpinner(plotlyOutput("megaPlot", height = "600px"))
-            ),
-            tabPanel(
-              "Links",
-              uiOutput("clinical1"),
-              uiOutput("ucsc1")
-            ),
-            tabPanel(
-              "Download",
-              tags$p("Use the button below to download all tables in a single excel file"),
-              downloadButton("download_all", "Download all")
-              )
-          )
-        )
       )
-    )
+        )
   )
 }
