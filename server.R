@@ -493,111 +493,129 @@ function(input, output, session) {
     }
     rm(i, j)
 
+    # Mega Plot: Base plot themes ----
+    theme_blank <-
+      theme(
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank()
+      )
+
+    theme_blank_no_legend <- theme_blank + theme(legend.position = "none")
+
+    # Mega Plot: HiC Plot ----
     phic <- ggplot(tmp, aes(x = x, y = y, text = paste0("Raw value: ", v))) +
       geom_polygon(aes(fill = f, group = g)) +
       scale_fill_gradientn(colors = plot_color()(n = 100), name = "Score") +
       coord_cartesian(xlim = c(minBP, maxBP)) +
       ylim(0, (nbins * 0.5) + 1) +
       ylab("HIC Intensities") +
+      theme_blank +
       theme(
-        axis.line = element_blank(),
-        axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.x = element_blank(),
         legend.justification = c(1, 1), legend.position = c(1, 1),
-        panel.background = element_blank(),
-        panel.border = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.background = element_blank()
       )
 
+    # Mega Plot: Gene Plot ----
     pgene <- ggplot(genes) +
-      geom_rect(aes(xmin = Start, ymin = 0.1, xmax = End, ymax = 0.9,
-                    lwd = 30,
-                    text = paste0("Symbol: ",Symbol,"<br />",
-                                  "Start: ",Start,"<br />",
-                                  "End: ",End)),
-                fill = plot_color()(n = nrow(genes)), alpha = 0.7) +
-      {if(!(input$showgenes %in% seq(1,100,by=2))) geom_text(aes(x = (Start+End)/2, y = rep(c(1.05,-0.05), length.out=nrow(genes)),
-                                           label=Symbol),
-                                       color = plot_color()(n = nrow(genes)), size = 3)} +
-      coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(-0.2,1.2) +
-      guides(fill=FALSE, alpha = FALSE, size= FALSE) +
-      ylab("Genes") +
-      theme(axis.line=element_blank(),
-            axis.text.x=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks=element_blank(),
-            axis.title.x=element_blank(),
-            legend.position="none",
-            panel.background=element_blank(),
-            panel.border=element_blank(),
-            panel.grid.major=element_blank(),
-            panel.grid.minor=element_blank(),
-            plot.background=element_blank())
-
-    psnp <- ggplot(ld) +
-      {if(nrow(ld[ld$is_query_snp==0,])>=1)geom_segment(aes(x = pos_hg38, y = 0,
-                       xend = pos_hg38, yend = 1,
-                       text=paste0("rsID: ",rsID,"<br />",
-                                   "Position: ",pos_hg38,"<br />",
-                                   "Ref/Alt: ",ref,"/",alt)),
-                   subset(ld, is_query_snp==0), color="grey") }+
-      geom_segment(aes(x = pos_hg38, y = 0,
-                       xend = pos_hg38, yend = 1,
-                       text=paste0("rsID: ",rsID,"<br />",
-                                   "Position: ",pos_hg38,"<br />",
-                                   "Ref/Alt: ",ref,"/",alt)),
-                   subset(ld, is_query_snp==1),
-                   color=plot_color()(n=nrow(ld[ld$is_query_snp==1,]))) +
-      coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(0,1) +
-      guides(colour=FALSE, size= FALSE) +
-      ylab("SNPs") +
-      theme(
-        axis.line = element_blank(),
-        axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.x = element_blank(),
-        legend.position = "none",
-        panel.background = element_blank(),
-        panel.border = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.background = element_blank()
+      geom_rect(
+        mapping = aes(xmin = Start, xmax = End,
+                      ymin = 0.1, ymax = 0.9,
+                      lwd = 30,
+                      text = paste0(
+                        "Symbol: ", Symbol, "<br />",
+                        "Start: ", Start, "<br />",
+                        "End: ", End
+                      )),
+        fill = plot_color()(n = nrow(genes)),
+        alpha = 0.7
       )
 
-    ptad <- ggplot(tads) +
-      geom_rect(aes(
-        xmin = start, ymin = 0.1, xmax = end, ymax = 0.9,
-        alpha = 0.7,
-        lwd = 30, text = paste0(chrX, ":", start, "-", end)
+    if (input$showgenes %% 2 == 0) {
+      pgene <- pgene +
+        geom_text(
+          aes(x = (Start + End) / 2,
+              y = rep(c(1.05, -0.05), length.out = nrow(genes)),
+              label = Symbol
+          ),
+          color = plot_color()(n = nrow(genes)), size = 3
+        )
+    }
+
+    pgene <- pgene +
+      coord_cartesian(xlim = c(minBP, maxBP)) +
+      ylim(-0.2, 1.2) +
+      guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+      ylab("Genes") +
+      theme_blank_no_legend
+
+    # Mega Plot: SNP Plot ----
+    psnp <- ggplot(ld)
+
+    if (nrow(ld[ld$is_query_snp == 0, ]) >= 1) {
+      psnp <- psnp +
+        geom_segment(
+          aes(x = pos_hg38, y = 0,
+              xend = pos_hg38, yend = 1,
+              text = paste0(
+                "rsID: ", rsID, "<br />",
+                "Position: ", pos_hg38, "<br />",
+                "Ref/Alt: ", ref, "/", alt
+              )
+          ),
+          subset(ld, is_query_snp == 0),
+          color = "grey"
+        )
+    }
+
+    psnp <- psnp +
+      geom_segment(aes(
+        x = pos_hg38, y = 0,
+        xend = pos_hg38, yend = 1,
+        text = paste0(
+          "rsID: ", rsID, "<br />",
+          "Position: ", pos_hg38, "<br />",
+          "Ref/Alt: ", ref, "/", alt
+        )
       ),
-      subset(tads, tads$seqnames == paste0("chr", chrX)),
-      fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]))
+      subset(ld, is_query_snp == 1),
+      color = plot_color()(n = nrow(ld[ld$is_query_snp == 1, ]))
+      ) +
+      coord_cartesian(xlim = c(minBP, maxBP)) +
+      ylim(0, 1) +
+      guides(colour = FALSE, size = FALSE) +
+      ylab("SNPs") +
+      theme_blank_no_legend
+
+    # Mega Plot: TAD Plot ----
+    ptad <- ggplot(tads) +
+      geom_rect(
+        aes(xmin = start, xmax = end,
+            ymin = 0.1, ymax = 0.9,
+            alpha = 0.7,
+            lwd = 30,
+            text = paste0(chrX, ":", start, "-", end)
+        ),
+        subset(tads, tads$seqnames == paste0("chr", chrX)),
+        fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]))
       ) +
       coord_cartesian(xlim = c(minBP, maxBP)) +
       ylim(0, 1) +
       guides(fill = FALSE, alpha = FALSE, size = FALSE) +
       labs(x = "BP", y = "TADs") +
+      theme_blank_no_legend +
       theme(
-        axis.line.y = element_blank(),
         axis.line.x = element_line(color = "black"),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),
         axis.ticks.x = element_line(color = "black"),
-        legend.position = "none",
-        panel.background = element_blank(),
-        panel.border = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.background = element_blank()
       )
 
+    # Mega Plot: Compose Final Plot
     p1 <- ggplotly(phic, tooltip = "text")
     p2 <- hide_legend(ggplotly(pgene, tooltip = "text"))
     p3 <- hide_legend(ggplotly(psnp, tooltip = "text"))
