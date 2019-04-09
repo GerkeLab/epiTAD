@@ -256,10 +256,8 @@ function(input, output, session) {
   output$eTable1 <- DT::renderDataTable({
     dat <- dat()
     dat <- dat[dat$eQTL!=".",]
-    # etest <- unlist(strsplit(as.character(dat$eQTL), ";"))
     etest <- strsplit(as.character(dat$eQTL), ";")
     names(etest) <- dat$rsID
-    # etest <- etest[!etest %in% c(".")]
     etest2 <- unlist(strsplit(unlist(etest), ","))
 
     # Check inputs and that there are eQTLs for these SNPs
@@ -269,7 +267,6 @@ function(input, output, session) {
     # Return table
     etest3 <- matrix(etest2, nrow = length(names(unlist(etest))), ncol = 4, byrow = TRUE)
     etest3 <- as.data.frame(etest3)
-    # etest3 <- cbind(dat[dat$eQTL!=".",]$rsID,etest3)
     etest3 <- cbind(names(unlist(etest)),etest3)
     colnames(etest3) <- c("SNP","Source", "Tissue", "Gene", "p")
     etest3 <- etest3[!duplicated(etest3),]
@@ -433,79 +430,10 @@ function(input, output, session) {
     )
   })
 
-  # output$megaPlot <- renderPlot({
-  #   ld <- dat()
-  #   chrX <- max(ld$chr, na.rm = TRUE)
-  #
-  #   minBP <- values$tmp_min
-  #   maxBP <- values$tmp_max
-  #
-  #   hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
-  #     chr = paste0("chr", chrX),
-  #     from = minBP, to = maxBP
-  #   )
-  #   hic_matrix <- as.matrix(intdata(hic_dat))
-  #
-  #   genes <- getBM(
-  #     attributes = c("hgnc_symbol", "start_position", "end_position"),
-  #     filters = c("chromosomal_region"), values = paste0(chrX, ":", minBP, ":", maxBP), mart = ensembl54
-  #   )
-  #   colnames(genes) <- c("Symbol", "Start", "End")
-  #
-  #   tads <- as.data.frame(tads_imr90)
-  #
-  #   ###########################################################################################
-  #
-  #   mat_layout <- matrix(c(1, 2, 3, 4, 1, 2, 3, 4), nrow = 4, ncol = 2)
-  #   layout(mat_layout, c(4, 4, 4, 4), c(2.25, 1.25, 0.5, 0.5))
-  #   par(mar = c(0.5, 4.5, 0.5, 0.5))
-  #
-  #   phic <- plotHic(hic_matrix,
-  #     chrom = paste0("chr", chrX),
-  #     chromstart = min(as.numeric(colnames(hic_matrix))),
-  #     chromend = max(as.numeric(colnames(hic_matrix))),
-  #     max_y = 20, zrange = c(0, 28),
-  #     palette = plot_color(),
-  #     flip = FALSE
-  #   )
-  #   labelgenome(
-  #     chrom = paste0("chr", chrX), chromstart = minBP, chromend = maxBP,
-  #     side = 1, scipen = 40, n = 1, scale = "bp"
-  #   )
-  #   addlegend(phic[[1]],
-  #     palette = phic[[2]], title = "score", side = "right", bottominset = 0.4,
-  #     topinset = 0, xoffset = -.035, labelside = "left", width = 0.025, title.offset = 0.035
-  #   )
-  #   mtext("HIC Intensities", side = 2, line = 1.75, cex = .75, font = 2)
-  #
-  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-  #   segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
-  #   text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = plot_color()(n = nrow(genes), alpha = 0.7))
-  #   mtext("Genes", side = 2, line = 1.75, cex = .75, font = 2)
-  #
-  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-  #   abline(v = ld[ld$is_query_snp == 0, ]$pos_hg38, col = "grey", lend = 1) # lwd=6
-  #   abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
-  #   mtext("LD", side = 2, line = 1.75, cex = .75, font = 2)
-  #
-  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-  #   segments(
-  #     x0 = tads[tads$seqnames == paste0("chr", chrX), ]$start,
-  #     y0 = 0.5,
-  #     x1 = tads[tads$seqnames == paste0("chr", chrX), ]$end,
-  #     y1 = 0.5, lwd = 30,
-  #     col = plot_color()(n = nrow(genes), alpha = 0.7),
-  #     lend = 1
-  #   )
-  #   mtext("TADs", side = 2, line = 1.75, cex = .75, font = 2)
-  # },
-  # height = function(){session$clientData$output_megaPlot_width}
-  # )
+
+  # Mega Plot ---------------------------------------------------------------
   output$megaPlot <- renderPlotly({
-
-    #####------------------------------------------------------------------------------------------
-    # pull in needed data pieces
-
+    # ---- Mega Plot: pull in needed data pieces ----
     ld <- dat()
     chrX <- max(ld$chr, na.rm = TRUE)
 
@@ -526,17 +454,12 @@ function(input, output, session) {
 
     tads <- as.data.frame(tads_imr90)
 
-    #####------------------------------------------------------------------------------------------
-    # create plot
+    # ---- Mega Plot: create plot ----
 
     ## create dataframe for plotting triangular heatmap
     # determine number of bins
     nbins = nrow(hic_matrix)
     stepsize = abs(minBP - maxBP) / (2*nbins)
-
-    # map to colors
-    # hicmcol = matrix(maptocolors(hic_matrix,plot_color(),num=100,range=c(0,28)),
-    #                  nrow=nrow(hic_matrix))
 
     # scale
     vec <- hic_matrix
@@ -548,7 +471,6 @@ function(input, output, session) {
     hicmcol = matrix(as.numeric(as.character(cols_vec)), nrow=nrow(hic_matrix))
 
     # make an empty tibble
-    # tmp <- tibble(x=numeric(),y=numeric(),f=character(),g=character(),v=numeric())
     tmp <- tibble(x=numeric(),y=numeric(),f=numeric(),g=character(),v=numeric())
 
     for (i in (1:nrow(hic_matrix))){
@@ -572,16 +494,11 @@ function(input, output, session) {
     }
     rm(i,j)
 
-    # tmp$v <- scale(tmp$v)
-
     phic <- ggplot(tmp,aes(x=x, y=y, text=paste0("Raw value: ",v))) +
       geom_polygon(aes(fill=f, group=g)) +
-      # scale_fill_identity() +
-      # scale_fill_continuous(name="Score") +
       scale_fill_gradientn(colors = plot_color()(n=100), name="Score") +
       coord_cartesian(xlim=c(minBP,maxBP)) +
       ylim(0,(nbins*0.5)+1) +
-      # guides(fill=guide_legend(title="Score"))
       ylab("HIC Intensities") +
       theme(axis.line=element_blank(),
             axis.text.x=element_blank(),
@@ -651,11 +568,8 @@ function(input, output, session) {
             panel.grid.minor=element_blank(),
             plot.background=element_blank())
 
-    # print(head(tads))
-
     ptad <- ggplot(tads) +
       geom_rect(aes(xmin = start, ymin = 0.1, xmax = end, ymax = 0.9,
-                    # color = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX),])),
                     alpha = 0.7,
                     lwd = 30, text=paste0(chrX,":",start,"-",end)),
                 subset(tads,tads$seqnames == paste0("chr", chrX)),
@@ -666,12 +580,9 @@ function(input, output, session) {
       labs(x="BP",y="TADs") +
       theme(axis.line.y=element_blank(),
             axis.line.x=element_line(color="black"),
-            # axis.text.x=element_blank(),
             axis.text.y=element_blank(),
             axis.ticks.y=element_blank(),
             axis.ticks.x=element_line(color="black"),
-            # axis.title.x=element_blank(),
-            # axis.title.y=element_blank(),
             legend.position="none",
             panel.background=element_blank(),
             panel.border=element_blank(),
@@ -679,7 +590,6 @@ function(input, output, session) {
             panel.grid.minor=element_blank(),
             plot.background=element_blank())
 
-    # p1 <- hide_legend(ggplotly(phic, tooltip="text"))
     p1 <- ggplotly(phic, tooltip="text")
     p2 <- hide_legend(ggplotly(pgene, tooltip="text"))
     p3 <- hide_legend(ggplotly(psnp, tooltip="text"))
