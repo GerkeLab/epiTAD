@@ -136,6 +136,7 @@ INPUT_CHOICES <- list(
 
 function(request) {
   dashboardPage(
+    skin = "black",
     dashboardHeader(title = "epiTAD"),
     dashboardSidebar(disable = TRUE),
     dashboardBody(
@@ -146,7 +147,11 @@ function(request) {
             box-shadow: 0 1px 3px rgba(0,0,0,.25);
             -webkit-box-shadow: 0 1px 3px rgba(0,0,0,.25);"
           )
-        )
+        ),
+        #<link rel="stylesheet" type="text/css" href="mystyles.css" media="screen" />
+        tags$link(rel = "stylesheet", type = "text/css", href = "AdminLTE.gerkelab.min.css", media = "screen"),
+        tags$link(rel = "stylesheet", type = "text/css", href = "_all-skins.gerkelab.min.css", media = "screen"),
+        tags$link(rel = "stylesheet", type = "text/css", href = "epitad.css", media = "screen")
       ),
       fluidRow(
         box(
