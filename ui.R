@@ -1,7 +1,7 @@
 # UI Options --------------------------------------------------------------
 
 # Set default color and type for shinycssloaders
-options(spinner.type = 7, spinner.color = "#357CA5")
+options(spinner.type = 7, spinner.color = "#989898")
 
 example_url <- function(x) {
   has_tooltip <- !is.null(x$tooltip)
