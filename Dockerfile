@@ -13,7 +13,7 @@ RUN Rscript -e "install.packages(c('BiocManager', 'shinydashboard', 'data.table'
 RUN Rscript -e "BiocManager::install(c('haploR', 'HiTC', 'Sushi', 'biomaRt'))" \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
-RUN Rscript -e "install.packages(c('writexl', 'plotly'))" \
+RUN Rscript -e "install.packages(c('writexl', 'plotly', 'shinyWidgets'))" \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
 ARG SHINY_APP_IDLE_TIMEOUT=0

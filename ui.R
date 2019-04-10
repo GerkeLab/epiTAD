@@ -153,6 +153,7 @@ function(request) {
         tags$link(rel = "stylesheet", type = "text/css", href = "_all-skins.gerkelab.min.css", media = "screen"),
         tags$link(rel = "stylesheet", type = "text/css", href = "epitad.css", media = "screen")
       ),
+      chooseSliderSkin("Flat", "#418c7a"),
       fluidRow(
         box(
           title = "Query SNPs", width = 4,
