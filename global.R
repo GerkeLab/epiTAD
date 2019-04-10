@@ -19,7 +19,7 @@ logger <- function(...) {
 
 # Global Data
 logger("Connecting to BioMart: ensembl, hsapiens_gene_ensemble")
-ensembl54 <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+ensembl54 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl",mirror = "useast")
 logger("Loading cached HiC Data")
 load("data/hicData.Rdata")
 
@@ -30,14 +30,6 @@ tad$chr[tad$chr == "chrX"] <- NA_character_
 tad$chr <- gsub("chr", "", tad$chr)
 tad$chr <- as.numeric(tad$chr)
 tad <- tad[!is.na(tad$chr), ]
-
-logger("Loading cached LAD data in `human.fibroblast.DamID.hg19.bed`")
-lad <- fread("data/human.fibroblast.DamID.hg19.bed")
-colnames(lad) <- c("chr", "start", "end", "dunno")
-lad$chr[lad$chr %in% c("chrX", "chrY")] <- NA_character_
-lad$chr <- gsub("chr", "", lad$chr)
-lad$chr <- as.numeric(lad$chr)
-lad <- lad[!is.na(lad$chr), ]
 
 enableBookmarking("url")
 
