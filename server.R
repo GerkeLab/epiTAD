@@ -234,14 +234,14 @@ function(input, output, session) {
     return(in_tad)
   })
 
-  in_lad <- eventReactive(input$update1, {
-    snps <- snps()
-    dat <- dat()
-    dat <- dat[dat$rsID %in% snps, ]
-    snp_pos <- dat$pos_hg38
-    lad <- lad[lad$chr == max(dat$chr, na.rm = TRUE), ]
-    return(lad)
-  })
+  # in_lad <- eventReactive(input$update1, {
+  #   snps <- snps()
+  #   dat <- dat()
+  #   dat <- dat[dat$rsID %in% snps, ]
+  #   snp_pos <- dat$pos_hg38
+  #   lad <- lad[lad$chr == max(dat$chr, na.rm = TRUE), ]
+  #   return(lad)
+  # })
 
   output$tadBoundaries <- renderText({
     in_tad <- in_tad()
@@ -373,17 +373,20 @@ function(input, output, session) {
     epitad_datatable(x[, c("rsid", input$parameters2)])
   }, server = FALSE)
 
-  output$geneTable <- DT::renderDataTable({
+  genes <- reactive({
     ld <- dat()
     chr <- max(ld$chr, na.rm = TRUE)
     total_min <- total_min()
     total_max <- total_max()
 
-    genes <- getBM(
+    x <- getBM(
       attributes = c("hgnc_symbol", "start_position", "end_position"),
       filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
     )
-    epitad_datatable(genes)
+  })
+
+  output$geneTable <- DT::renderDataTable({
+    epitad_datatable(genes())
   }, server = FALSE)
 
   output$oncoTable <- DT::renderDataTable({
@@ -445,10 +448,7 @@ function(input, output, session) {
     )
     hic_matrix <- as.matrix(intdata(hic_dat))
 
-    genes <- getBM(
-      attributes = c("hgnc_symbol", "start_position", "end_position"),
-      filters = c("chromosomal_region"), values = paste0(chrX, ":", minBP, ":", maxBP), mart = ensembl54
-    )
+    genes <- genes()
     colnames(genes) <- c("Symbol", "Start", "End")
 
     tads <- as.data.frame(tads_imr90)
@@ -645,10 +645,7 @@ function(input, output, session) {
       )
       hic_matrix <- as.matrix(intdata(hic_dat))
 
-      genes <- getBM(
-        attributes = c("hgnc_symbol", "start_position", "end_position"),
-        filters = c("chromosomal_region"), values = paste0(chrX, ":", minBP, ":", maxBP), mart = ensembl54
-      )
+      genes <- genes()
       colnames(genes) <- c("Symbol", "Start", "End")
 
       tads <- as.data.frame(tads_imr90)
@@ -785,10 +782,7 @@ function(input, output, session) {
       total_min <- total_min()
       total_max <- total_max()
 
-      genes <- getBM(
-        attributes = c("hgnc_symbol", "start_position", "end_position"),
-        filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
-      )
+      genes <- genes()
 
       y <- fromJSON(paste0("http://portals.broadinstitute.org/oncotator/genes/", chr, "_", total_min, "_", total_max, "/"))
 
