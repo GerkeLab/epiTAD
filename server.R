@@ -639,7 +639,11 @@ function(input, output, session) {
     }
   })
 
-  observeEvent(input$btn_info, {
+  trigger_info_modal <- reactive({
+    input$btn_info + input$btn_info_nav
+  })
+
+  observeEvent(trigger_info_modal(), {
     modal_ui <- tagList(
       tags$h4("App Details"),
       tags$p(

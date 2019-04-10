@@ -137,7 +137,31 @@ INPUT_CHOICES <- list(
 function(request) {
   dashboardPage(
     skin = "black",
-    dashboardHeader(title = "epiTAD"),
+    dashboardHeader(
+      title = "epiTAD",
+      tags$li(
+        class = "dropdown",
+        actionLink("btn_info_nav", label = "", icon = icon("info"), title = "About epiTAD")
+      ),
+      tags$li(
+        class = "dropdown",
+        tags$a(
+          href = "https://github.com/gerkelab/epiTAD/",
+          title = "epiTAD on GitHub",
+          target = "_blank",
+          icon("github")
+        )
+      ),
+      tags$li(
+        class = "dropdown",
+        tags$a(
+          href = "https://gerkelab.com/project/epiTAD/",
+          title = "GerkeLab Project Page",
+          target = "_blank",
+          icon("flask")
+        )
+      )
+    ),
     dashboardSidebar(disable = TRUE),
     dashboardBody(
       tags$head(
