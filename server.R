@@ -234,15 +234,6 @@ function(input, output, session) {
     return(in_tad)
   })
 
-  # in_lad <- eventReactive(input$update1, {
-  #   snps <- snps()
-  #   dat <- dat()
-  #   dat <- dat[dat$rsID %in% snps, ]
-  #   snp_pos <- dat$pos_hg38
-  #   lad <- lad[lad$chr == max(dat$chr, na.rm = TRUE), ]
-  #   return(lad)
-  # })
-
   output$tadBoundaries <- renderText({
     in_tad <- in_tad()
     if (nrow(in_tad) < 1) {
@@ -379,9 +370,11 @@ function(input, output, session) {
     total_min <- total_min()
     total_max <- total_max()
 
-    x <- getBM(
+    getBM(
       attributes = c("hgnc_symbol", "start_position", "end_position"),
-      filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
+      filters = c("chromosomal_region"),
+      values = paste0(chr, ":", total_min, ":", total_max),
+      mart = ensembl54
     )
   })
 
