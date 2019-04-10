@@ -25,3 +25,4 @@ COPY global.R /srv/shiny-server/epiTAD
 COPY ui.R /srv/shiny-server/epiTAD
 COPY server.R /srv/shiny-server/epiTAD
 COPY data/ /srv/shiny-server/epiTAD/data/
+COPY www/ /srv/shiny-server/epiTAD/www/
