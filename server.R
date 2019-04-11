@@ -8,11 +8,15 @@ epitad_datatable <- function(
   style = "bootstrap",
   autoHideNavigation = TRUE,
   selection = "none",
-  extensions = "Buttons",
+  extensions = c("Buttons", "FixedColumns"),
   options = list(
-    dom = "t<'row'<'col-sm-4'B><'col-sm-8'p>>",
+    # dom = "t<'row'<'col-sm-4'B><'col-sm-8'p>>",
+    dom = "t<'row'<'col-sm-4'B>>",
     buttons = c('copy', 'csv', 'print'),
-    pageLength = 10
+    scrollX = TRUE,
+    scrollY = "300px",
+    fixedColumns = list(leftColumns = 1),
+    paging = FALSE
   )
 ) {
   # Worst case scenario, return nothing (just in case)
@@ -559,28 +563,28 @@ function(input, output, session) {
       # ---- Mega Plot: pull in needed data pieces ----
       ld <- dat()
       chrX <- max(ld$chr, na.rm = TRUE)
-      
+
       minBP <- values$tmp_min
       maxBP <- values$tmp_max
-      
+
       hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
                                chr = paste0("chr", chrX),
                                from = minBP, to = maxBP
       )
       hic_matrix <- as.matrix(intdata(hic_dat))
-      
+
       genes <- genes()
       colnames(genes) <- c("Symbol", "Start", "End")
-      
+
       tads <- as.data.frame(tads_imr90)
-      
+
       # ---- Mega Plot: create plot ----
-      
+
       ## create dataframe for plotting triangular heatmap
       # determine number of bins
       nbins <- nrow(hic_matrix)
       stepsize <- abs(minBP - maxBP) / (2 * nbins)
-      
+
       # scale
       vec <- hic_matrix
       vec[which(vec < 0)] <- 0
@@ -589,18 +593,18 @@ function(input, output, session) {
       cols_num <- c(0:length(breaks) + 1)
       cols_vec <- cut(vec, c(-Inf, breaks, Inf), labels = cols_num)
       hicmcol <- matrix(as.numeric(as.character(cols_vec)), nrow = nrow(hic_matrix))
-      
+
       # make an empty tibble
       tmp <- tibble(x = numeric(), y = numeric(), f = numeric(), g = character(), v = numeric())
-      
+
       for (i in (1:nrow(hic_matrix))) {
         y <- -.5
-        
+
         x <- minBP + (i * 2 * stepsize) - (stepsize * 2)
         for (j in (i:ncol(hic_matrix))) {
           x <- x + stepsize
           y <- y + .5
-          
+
           poly_dat <- tibble(
             x = c(x - stepsize, x, x + stepsize, x),
             y = c(y, y + .5, y, y - .5),
@@ -608,12 +612,12 @@ function(input, output, session) {
             g = paste0("bin_", i, "_", j),
             v = hic_matrix[i, j]
           )
-          
+
           tmp <- bind_rows(tmp, poly_dat)
         }
       }
       rm(i, j)
-      
+
       # Mega Plot: Base plot themes ----
       theme_blank <-
         theme(
@@ -628,9 +632,9 @@ function(input, output, session) {
           panel.grid.minor = element_blank(),
           plot.background = element_blank()
         )
-      
+
       theme_blank_no_legend <- theme_blank + theme(legend.position = "none")
-      
+
       # Mega Plot: HiC Plot ----
       phic <- ggplot(tmp, aes(x = x, y = y, text = paste0("Raw value: ", v))) +
         geom_polygon(aes(fill = f, group = g)) +
@@ -642,7 +646,7 @@ function(input, output, session) {
         theme(
           legend.justification = c(1, 1), legend.position = c(1, 1),
         )
-      
+
       # Mega Plot: Gene Plot ----
       pgene <- ggplot(genes) +
         geom_rect(
@@ -657,7 +661,7 @@ function(input, output, session) {
           fill = plot_color()(n = nrow(genes)),
           alpha = 0.7
         )
-      
+
       if (input$showgenes %% 2 == 0) {
         pgene <- pgene +
           geom_text(
@@ -668,17 +672,17 @@ function(input, output, session) {
             color = plot_color()(n = nrow(genes)), size = 3
           )
       }
-      
+
       pgene <- pgene +
         coord_cartesian(xlim = c(minBP, maxBP)) +
         ylim(-0.2, 1.2) +
         guides(fill = FALSE, alpha = FALSE, size = FALSE) +
         ylab("Genes") +
         theme_blank_no_legend
-      
+
       # Mega Plot: SNP Plot ----
       psnp <- ggplot(ld)
-      
+
       if (nrow(ld[ld$is_query_snp == 0, ]) >= 1) {
         psnp <- psnp +
           geom_segment(
@@ -694,7 +698,7 @@ function(input, output, session) {
             color = "grey"
           )
       }
-      
+
       psnp <- psnp +
         geom_segment(aes(
           x = pos_hg38, y = 0,
@@ -713,7 +717,7 @@ function(input, output, session) {
         guides(colour = FALSE, size = FALSE) +
         ylab("SNPs") +
         theme_blank_no_legend
-      
+
       # Mega Plot: TAD Plot ----
       ptad <- ggplot(tads) +
         geom_rect(
@@ -735,11 +739,11 @@ function(input, output, session) {
           axis.line.x = element_line(color = "black"),
           axis.ticks.x = element_line(color = "black"),
         )
-      
+
       # Mega Plot: Compose Final Plot
       final <- ggarrange(phic,pgene,psnp,ptad,
                          ncol = 1, nrow = 4,heights = c(6.5,1.5, 1, 1))
-      
+
       print(final)
       dev.off()
     }
