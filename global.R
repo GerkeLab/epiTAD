@@ -40,6 +40,7 @@ logger("Launching app...")
 # Example links
 EXAMPLES <- list(
   "8q24" = list(
+    # rs1016343,rs10505477,rs9642880,rs13281615,rs1447295,rs1562430,rs16901979,rs16902094,rs2456449,rs4242382,rs4242384,rs445114,rs6983267,rs7014346
     url = '?_inputs_&oncoParameters1=null&oncoParameters2=null&oncoParameters3=null&oncoParameters4=null&parameters=["pos_hg38"%2C"r2"%2C"query_snp_rsid"]&parameters2=["%23chromosome"%2C"coordinate"%2C"hits"%2C"score_anno"]&plotColor="1"&plotEndBP=127810818&plotStartBP=126730818&pop="EUR"&resetBP=0&sidebarCollapsed=false&sidebarItemExpanded=null&snpList="rs1016343%2Crs10505477%2Crs9642880%2Crs13281615%2Crs1447295%2Crs1562430%2Crs16901979%2Crs16902094%2Crs2456449%2Crs4242382%2Crs4242384%2Crs445114%2Crs6983267%2Crs7014346"&tabs="tab1"&update1=7&updateBP=0&value=0.8',
     text = "Chromosome 8q24 cancer risk loci",
     tooltip = "A selection of SNPs that could be uploaded via a text file",
