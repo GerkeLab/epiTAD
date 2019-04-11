@@ -363,7 +363,7 @@ function(request) {
               )
             ),
             tags$hr(),
-            withSpinner(DT::dataTableOutput("LDtable1"), proxy.height = "100px")
+            withSpinner(DT::dataTableOutput("LDtable1"), proxy.height = "395px")
           ),
           tabPanel(
             "RegulomeDB",
@@ -406,11 +406,11 @@ function(request) {
               )
             ),
             tags$hr(),
-            withSpinner(DT::dataTableOutput("LDtable2"), proxy.height = "100px")
+            withSpinner(DT::dataTableOutput("LDtable2"), proxy.height = "395px")
           ),
           tabPanel(
             "TADs",
-            withSpinner(textOutput("tadBoundaries"), proxy.height = "100px"),
+            withSpinner(textOutput("tadBoundaries"), proxy.height = "395px"),
             uiOutput("hic1")
           )
         ),
@@ -419,7 +419,7 @@ function(request) {
           tabPanel(
             "ENSEMBL",
             h5(helpText("Genes spanned by the greater of the LD or TAD region")),
-            withSpinner(DT::dataTableOutput("geneTable"), proxy.height = "100px")
+            withSpinner(DT::dataTableOutput("geneTable"), proxy.height = "395px")
           ),
           tabPanel(
             "Oncotator",
@@ -461,7 +461,7 @@ function(request) {
               )
             ),
             tags$hr(),
-            withSpinner(DT::dataTableOutput("oncoTable"), proxy.height = "100px")
+            withSpinner(DT::dataTableOutput("oncoTable"), proxy.height = "395px")
           ),
           tabPanel(
             "eQTL",
