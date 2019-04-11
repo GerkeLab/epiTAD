@@ -172,7 +172,9 @@ function(input, output, session) {
     snps <- snps()
     dat <- dat()
     dat <- dat[dat$rsID %in% snps, ]
-    snp_pos <- dat$pos_hg38
+    # If multiple SNPs queried, need to pick one position
+    # we're choosing the minimum but may revist in the future
+    snp_pos <- min(as.numeric(dat$pos_hg38))
     tad <- tad[tad$chr == max(dat$chr, na.rm = TRUE), ]
     in_tad <- tad[tad$start_position <= snp_pos & tad$end_position >= snp_pos, ]
     return(in_tad)
