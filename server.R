@@ -117,6 +117,16 @@ function(input, output, session) {
       snps <- as.character(unlist(strsplit(input$snpList, ",")))
       snps <- trimws(snps)
       x <- queryRegulome(query = snps)
+      if (!"score" %in% names(x$res.table)) {
+        # Got a bad response from RegulomeDB
+        regulome_error_msg <-
+          if (any(grepl("Server error", paste0(x$res.table[[1]])))) {
+            "An error occurred on the RegulomeDB server, please try again."
+          } else {
+            "An error occurred while querying RegulomeDB, please try again."
+          }
+        shiny::validate(need(FALSE, regulome_error_msg))
+      }
       shiny::validate(need(nrow(x$res.table) > 0, SNP_QUERY_ERROR))
       x <- as.data.frame(x$res.table)
       x$score <- as.character(x$score)
