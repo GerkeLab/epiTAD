@@ -17,6 +17,15 @@ body, h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4, .h5, .h6, .main-header .logo {
   -webkit-box-shadow: 0 3px 3px rgba(0,0,0,0.1) !important;
 }
 
+.wrapper {
+  min-height: 100vh !important;
+  height: 100% !important;
+  background-color: #f0f0f0 !important;
+}
+.content-wrapper {
+  height: 100%;
+}
+
 @media (max-width:767px) {
   .content-wrapper {
     padding-top: 100px;
