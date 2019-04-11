@@ -295,7 +295,7 @@ function(request) {
                       class = "btn-group",
                       actionButton("updateBP", "Update Coordinates"),
                       actionButton("resetBP", "Reset Plot"),
-                      actionButton("showgenes","Show gene names"),
+                      actionButton("showgenes","Toggle gene names"),
                       downloadButton("plotDownload", "Download Plot")
                       # plot controls button group end ----
                     )
