@@ -8,11 +8,15 @@ epitad_datatable <- function(
   style = "bootstrap",
   autoHideNavigation = TRUE,
   selection = "none",
-  extensions = "Buttons",
+  extensions = c("Buttons", "FixedColumns"),
   options = list(
-    dom = "t<'row'<'col-sm-4'B><'col-sm-8'p>>",
+    # dom = "t<'row'<'col-sm-4'B><'col-sm-8'p>>",
+    dom = "t<'row'<'col-sm-4'B>>",
     buttons = c('copy', 'csv', 'print'),
-    pageLength = 10
+    scrollX = TRUE,
+    scrollY = "300px",
+    fixedColumns = list(leftColumns = 1),
+    paging = FALSE
   )
 ) {
   # Worst case scenario, return nothing (just in case)
@@ -37,7 +41,7 @@ function(input, output, session) {
     updateQueryString(url)
   })
 
-  DT:::DT2BSClass(c("stipe", "hover", "compact", "cell-border"))
+  DT:::DT2BSClass(c("stripe", "hover", "compact", "cell-border"))
 
   sample <- eventReactive(input$update1, {
     samplefile <- input$file1
@@ -52,8 +56,7 @@ function(input, output, session) {
       tryCatch(
         list(result = .f(...), error = NULL),
         error = function(e) {
-          if (!quiet)
-            message("Error: ", e$message)
+          if (!quiet) message("Error: ", e$message)
 
           list(result = NULL, error = if (is.null(error_msg)) e$message else error_msg)
         },
@@ -110,106 +113,46 @@ function(input, output, session) {
       x <- as.data.frame(x$res.table)
       x$score <- as.character(x$score)
       x$score_anno <- NA
-      for (i in nrow(x)) {
-        if (x$score[i] == "1a") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "1b") {
-          x$score_anno[i] <- "eQTL + TF binding + any motif + DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "1c") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif + DNase peak"
-        }
-        else if (x$score[i] == "1d") {
-          x$score_anno[i] <- "eQTL + TF binding + any motif + DNase peak"
-        }
-        else if (x$score[i] == "1e") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif"
-        }
-        else if (x$score[i] == "1f") {
-          x$score_anno[i] <- "eQTL + TF binding / DNase peak"
-        }
-        else if (x$score[i] == "2a") {
-          x$score_anno[i] <- "TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "2b") {
-          x$score_anno[i] <- "TF binding + any motif + DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "2c") {
-          x$score_anno[i] <- "TF binding + matched TF motif + DNase peak"
-        }
-        else if (x$score[i] == "3a") {
-          x$score_anno[i] <- "TF binding + any motif + DNase peak"
-        }
-        else if (x$score[i] == "3b") {
-          x$score_anno[i] <- "TF binding + matched TF motif"
-        }
-        else if (x$score[i] == "4") {
-          x$score_anno[i] <- "TF binding + DNase peak"
-        }
-        else if (x$score[i] == "5") {
-          x$score_anno[i] <- "TF binding or DNase peak"
-        }
-        else {
-          x$score_anno[i] <- "Other"
-        }
-      }
-      return(x)
-    }
-    if (input$snpList != "") {
+    } else {
       snps <- as.character(unlist(strsplit(input$snpList, ",")))
       snps <- trimws(snps)
       x <- queryRegulome(query = snps)
+      if (!"score" %in% names(x$res.table)) {
+        # Got a bad response from RegulomeDB
+        regulome_error_msg <-
+          if (any(grepl("Server error", paste0(x$res.table[[1]])))) {
+            "An error occurred on the RegulomeDB server, please try again."
+          } else {
+            "An error occurred while querying RegulomeDB, please try again."
+          }
+        shiny::validate(need(FALSE, regulome_error_msg))
+      }
       shiny::validate(need(nrow(x$res.table) > 0, SNP_QUERY_ERROR))
       x <- as.data.frame(x$res.table)
       x$score <- as.character(x$score)
       x$score_anno <- NA
-      for (i in 1:nrow(x)) {
-        if (x$score[i] == "1a") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "1b") {
-          x$score_anno[i] <- "eQTL + TF binding + any motif + DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "1c") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif + DNase peak"
-        }
-        else if (x$score[i] == "1d") {
-          x$score_anno[i] <- "eQTL + TF binding + any motif + DNase peak"
-        }
-        else if (x$score[i] == "1e") {
-          x$score_anno[i] <- "eQTL + TF binding + matched TF motif"
-        }
-        else if (x$score[i] == "1f") {
-          x$score_anno[i] <- "eQTL + TF binding / DNase peak"
-        }
-        else if (x$score[i] == "2a") {
-          x$score_anno[i] <- "TF binding + matched TF motif + matched DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "2b") {
-          x$score_anno[i] <- "TF binding + any motif + DNase Footprint + DNase peak"
-        }
-        else if (x$score[i] == "2c") {
-          x$score_anno[i] <- "TF binding + matched TF motif + DNase peak"
-        }
-        else if (x$score[i] == "3a") {
-          x$score_anno[i] <- "TF binding + any motif + DNase peak"
-        }
-        else if (x$score[i] == "3b") {
-          x$score_anno[i] <- "TF binding + matched TF motif"
-        }
-        else if (x$score[i] == "4") {
-          x$score_anno[i] <- "TF binding + DNase peak"
-        }
-        else if (x$score[i] == "5") {
-          x$score_anno[i] <- "TF binding or DNase peak"
-        }
-        else {
-          x$score_anno[i] <- "Other"
-        }
-      }
-      return(x)
     }
+
+    for (i in seq_len(nrow(x))) {
+      x$score_anno[i] <- switch(
+        x$score[i],
+        "1a" = "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak",
+        "1b" = "eQTL + TF binding + any motif + DNase Footprint + DNase peak",
+        "1c" = "eQTL + TF binding + matched TF motif + DNase peak",
+        "1d" = "eQTL + TF binding + any motif + DNase peak",
+        "1e" = "eQTL + TF binding + matched TF motif",
+        "1f" = "eQTL + TF binding / DNase peak",
+        "2a" = "TF binding + matched TF motif + matched DNase Footprint + DNase peak",
+        "2b" = "TF binding + any motif + DNase Footprint + DNase peak",
+        "2c" = "TF binding + matched TF motif + DNase peak",
+        "3a" = "TF binding + any motif + DNase peak",
+        "3b" = "TF binding + matched TF motif",
+        "4"  = "TF binding + DNase peak",
+        "5"  = "TF binding or DNase peak",
+        "Other"
+      )
+    }
+    x
   })
 
   snps <- eventReactive(input$update1, {
@@ -229,19 +172,12 @@ function(input, output, session) {
     snps <- snps()
     dat <- dat()
     dat <- dat[dat$rsID %in% snps, ]
-    snp_pos <- dat$pos_hg38
+    # If multiple SNPs queried, need to pick one position
+    # we're choosing the minimum but may revist in the future
+    snp_pos <- min(as.numeric(dat$pos_hg38))
     tad <- tad[tad$chr == max(dat$chr, na.rm = TRUE), ]
     in_tad <- tad[tad$start_position <= snp_pos & tad$end_position >= snp_pos, ]
     return(in_tad)
-  })
-
-  in_lad <- eventReactive(input$update1, {
-    snps <- snps()
-    dat <- dat()
-    dat <- dat[dat$rsID %in% snps, ]
-    snp_pos <- dat$pos_hg38
-    lad <- lad[lad$chr == max(dat$chr, na.rm = TRUE), ]
-    return(lad)
   })
 
   output$tadBoundaries <- renderText({
@@ -255,11 +191,9 @@ function(input, output, session) {
 
   output$eTable1 <- DT::renderDataTable({
     dat <- dat()
-    dat <- dat[dat$eQTL!=".",]
-    # etest <- unlist(strsplit(as.character(dat$eQTL), ";"))
+    dat <- dat[dat$eQTL != ".", ]
     etest <- strsplit(as.character(dat$eQTL), ";")
     names(etest) <- dat$rsID
-    # etest <- etest[!etest %in% c(".")]
     etest2 <- unlist(strsplit(unlist(etest), ","))
 
     # Check inputs and that there are eQTLs for these SNPs
@@ -269,10 +203,9 @@ function(input, output, session) {
     # Return table
     etest3 <- matrix(etest2, nrow = length(names(unlist(etest))), ncol = 4, byrow = TRUE)
     etest3 <- as.data.frame(etest3)
-    # etest3 <- cbind(dat[dat$eQTL!=".",]$rsID,etest3)
-    etest3 <- cbind(names(unlist(etest)),etest3)
-    colnames(etest3) <- c("SNP","Source", "Tissue", "Gene", "p")
-    etest3 <- etest3[!duplicated(etest3),]
+    etest3 <- cbind(names(unlist(etest)), etest3)
+    colnames(etest3) <- c("SNP", "Source", "Tissue", "Gene", "p")
+    etest3 <- etest3[!duplicated(etest3), ]
     epitad_datatable(etest3[etest3$Tissue %in% input$tissue, ])
   }, server = FALSE)
 
@@ -377,17 +310,22 @@ function(input, output, session) {
     epitad_datatable(x[, c("rsid", input$parameters2)])
   }, server = FALSE)
 
-  output$geneTable <- DT::renderDataTable({
+  genes <- reactive({
     ld <- dat()
     chr <- max(ld$chr, na.rm = TRUE)
     total_min <- total_min()
     total_max <- total_max()
 
-    genes <- getBM(
+    getBM(
       attributes = c("hgnc_symbol", "start_position", "end_position"),
-      filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
+      filters = c("chromosomal_region"),
+      values = paste0(chr, ":", total_min, ":", total_max),
+      mart = ensembl54
     )
-    epitad_datatable(genes)
+  })
+
+  output$geneTable <- DT::renderDataTable({
+    epitad_datatable(genes())
   }, server = FALSE)
 
   output$oncoTable <- DT::renderDataTable({
@@ -433,79 +371,10 @@ function(input, output, session) {
     )
   })
 
-  # output$megaPlot <- renderPlot({
-  #   ld <- dat()
-  #   chrX <- max(ld$chr, na.rm = TRUE)
-  #
-  #   minBP <- values$tmp_min
-  #   maxBP <- values$tmp_max
-  #
-  #   hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
-  #     chr = paste0("chr", chrX),
-  #     from = minBP, to = maxBP
-  #   )
-  #   hic_matrix <- as.matrix(intdata(hic_dat))
-  #
-  #   genes <- getBM(
-  #     attributes = c("hgnc_symbol", "start_position", "end_position"),
-  #     filters = c("chromosomal_region"), values = paste0(chrX, ":", minBP, ":", maxBP), mart = ensembl54
-  #   )
-  #   colnames(genes) <- c("Symbol", "Start", "End")
-  #
-  #   tads <- as.data.frame(tads_imr90)
-  #
-  #   ###########################################################################################
-  #
-  #   mat_layout <- matrix(c(1, 2, 3, 4, 1, 2, 3, 4), nrow = 4, ncol = 2)
-  #   layout(mat_layout, c(4, 4, 4, 4), c(2.25, 1.25, 0.5, 0.5))
-  #   par(mar = c(0.5, 4.5, 0.5, 0.5))
-  #
-  #   phic <- plotHic(hic_matrix,
-  #     chrom = paste0("chr", chrX),
-  #     chromstart = min(as.numeric(colnames(hic_matrix))),
-  #     chromend = max(as.numeric(colnames(hic_matrix))),
-  #     max_y = 20, zrange = c(0, 28),
-  #     palette = plot_color(),
-  #     flip = FALSE
-  #   )
-  #   labelgenome(
-  #     chrom = paste0("chr", chrX), chromstart = minBP, chromend = maxBP,
-  #     side = 1, scipen = 40, n = 1, scale = "bp"
-  #   )
-  #   addlegend(phic[[1]],
-  #     palette = phic[[2]], title = "score", side = "right", bottominset = 0.4,
-  #     topinset = 0, xoffset = -.035, labelside = "left", width = 0.025, title.offset = 0.035
-  #   )
-  #   mtext("HIC Intensities", side = 2, line = 1.75, cex = .75, font = 2)
-  #
-  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-  #   segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
-  #   text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = plot_color()(n = nrow(genes), alpha = 0.7))
-  #   mtext("Genes", side = 2, line = 1.75, cex = .75, font = 2)
-  #
-  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-  #   abline(v = ld[ld$is_query_snp == 0, ]$pos_hg38, col = "grey", lend = 1) # lwd=6
-  #   abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
-  #   mtext("LD", side = 2, line = 1.75, cex = .75, font = 2)
-  #
-  #   plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-  #   segments(
-  #     x0 = tads[tads$seqnames == paste0("chr", chrX), ]$start,
-  #     y0 = 0.5,
-  #     x1 = tads[tads$seqnames == paste0("chr", chrX), ]$end,
-  #     y1 = 0.5, lwd = 30,
-  #     col = plot_color()(n = nrow(genes), alpha = 0.7),
-  #     lend = 1
-  #   )
-  #   mtext("TADs", side = 2, line = 1.75, cex = .75, font = 2)
-  # },
-  # height = function(){session$clientData$output_megaPlot_width}
-  # )
+
+  # Mega Plot ---------------------------------------------------------------
   output$megaPlot <- renderPlotly({
-
-    #####------------------------------------------------------------------------------------------
-    # pull in needed data pieces
-
+    # ---- Mega Plot: pull in needed data pieces ----
     ld <- dat()
     chrX <- max(ld$chr, na.rm = TRUE)
 
@@ -518,179 +387,184 @@ function(input, output, session) {
     )
     hic_matrix <- as.matrix(intdata(hic_dat))
 
-    genes <- getBM(
-      attributes = c("hgnc_symbol", "start_position", "end_position"),
-      filters = c("chromosomal_region"), values = paste0(chrX, ":", minBP, ":", maxBP), mart = ensembl54
-    )
+    genes <- genes()
     colnames(genes) <- c("Symbol", "Start", "End")
 
     tads <- as.data.frame(tads_imr90)
 
-    #####------------------------------------------------------------------------------------------
-    # create plot
+    # ---- Mega Plot: create plot ----
 
     ## create dataframe for plotting triangular heatmap
     # determine number of bins
-    nbins = nrow(hic_matrix)
-    stepsize = abs(minBP - maxBP) / (2*nbins)
-
-    # map to colors
-    # hicmcol = matrix(maptocolors(hic_matrix,plot_color(),num=100,range=c(0,28)),
-    #                  nrow=nrow(hic_matrix))
+    nbins <- nrow(hic_matrix)
+    stepsize <- abs(minBP - maxBP) / (2 * nbins)
 
     # scale
     vec <- hic_matrix
-    vec[which(vec < 0)] = 0
-    vec[which(vec > 28)] = 28
-    breaks <- seq(0, 28,length.out=100)
+    vec[which(vec < 0)] <- 0
+    vec[which(vec > 28)] <- 28
+    breaks <- seq(0, 28, length.out = 100)
     cols_num <- c(0:length(breaks) + 1)
-    cols_vec = cut(vec, c(-Inf, breaks, Inf), labels=cols_num)
-    hicmcol = matrix(as.numeric(as.character(cols_vec)), nrow=nrow(hic_matrix))
+    cols_vec <- cut(vec, c(-Inf, breaks, Inf), labels = cols_num)
+    hicmcol <- matrix(as.numeric(as.character(cols_vec)), nrow = nrow(hic_matrix))
 
     # make an empty tibble
-    # tmp <- tibble(x=numeric(),y=numeric(),f=character(),g=character(),v=numeric())
-    tmp <- tibble(x=numeric(),y=numeric(),f=numeric(),g=character(),v=numeric())
+    tmp <- tibble(x = numeric(), y = numeric(), f = numeric(), g = character(), v = numeric())
 
-    for (i in (1:nrow(hic_matrix))){
-      y = -.5
+    for (i in (1:nrow(hic_matrix))) {
+      y <- -.5
 
-      x = minBP + (i * 2 * stepsize) - (stepsize * 2)
-      for (j in (i:ncol(hic_matrix))){
-        x = x + stepsize
-        y = y + .5
+      x <- minBP + (i * 2 * stepsize) - (stepsize * 2)
+      for (j in (i:ncol(hic_matrix))) {
+        x <- x + stepsize
+        y <- y + .5
 
         poly_dat <- tibble(
-          x = c(x-stepsize,x,x+stepsize,x),
-          y = c(y,y+.5,y,y-.5),
-          f = hicmcol[i,j],
-          g = paste0("bin_",i,"_",j),
-          v = hic_matrix[i,j]
+          x = c(x - stepsize, x, x + stepsize, x),
+          y = c(y, y + .5, y, y - .5),
+          f = hicmcol[i, j],
+          g = paste0("bin_", i, "_", j),
+          v = hic_matrix[i, j]
         )
 
-        tmp <-  bind_rows(tmp,poly_dat)
+        tmp <- bind_rows(tmp, poly_dat)
       }
     }
-    rm(i,j)
+    rm(i, j)
 
-    # tmp$v <- scale(tmp$v)
+    # Mega Plot: Base plot themes ----
+    theme_blank <-
+      theme(
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank()
+      )
 
-    phic <- ggplot(tmp,aes(x=x, y=y, text=paste0("Raw value: ",v))) +
-      geom_polygon(aes(fill=f, group=g)) +
-      # scale_fill_identity() +
-      # scale_fill_continuous(name="Score") +
-      scale_fill_gradientn(colors = plot_color()(n=100), name="Score") +
-      coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(0,(nbins*0.5)+1) +
-      # guides(fill=guide_legend(title="Score"))
+    theme_blank_no_legend <- theme_blank + theme(legend.position = "none")
+
+    # Mega Plot: HiC Plot ----
+    phic <- ggplot(tmp, aes(x = x, y = y, text = paste0("Raw value: ", v))) +
+      geom_polygon(aes(fill = f, group = g)) +
+      scale_fill_gradientn(colors = plot_color()(n = 100), name = "Score") +
+      coord_cartesian(xlim = c(minBP, maxBP)) +
+      ylim(0, (nbins * 0.5) + 1) +
       ylab("HIC Intensities") +
-      theme(axis.line=element_blank(),
-            axis.text.x=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks=element_blank(),
-            axis.title.x=element_blank(),
-            legend.justification=c(1,1), legend.position=c(1,1),
-            panel.background=element_blank(),
-            panel.border=element_blank(),
-            panel.grid.major=element_blank(),
-            panel.grid.minor=element_blank(),
-            plot.background=element_blank())
+      theme_blank +
+      theme(
+        legend.justification = c(1, 1), legend.position = c(1, 1),
+      )
 
+    # Mega Plot: Gene Plot ----
     pgene <- ggplot(genes) +
-      geom_rect(aes(xmin = Start, ymin = 0.1, xmax = End, ymax = 0.9,
-                    lwd = 30,
-                    text = paste0("Symbol: ",Symbol,"<br />",
-                                  "Start: ",Start,"<br />",
-                                  "End: ",End)),
-                fill = plot_color()(n = nrow(genes)), alpha = 0.7) +
-      {if(!(input$showgenes %in% seq(1,100,by=2))) geom_text(aes(x = (Start+End)/2, y = rep(c(1.05,-0.05), length.out=nrow(genes)),
-                                           label=Symbol),
-                                       color = plot_color()(n = nrow(genes)), size = 3)} +
-      coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(-0.2,1.2) +
-      guides(fill=FALSE, alpha = FALSE, size= FALSE) +
+      geom_rect(
+        mapping = aes(xmin = Start, xmax = End,
+                      ymin = 0.1, ymax = 0.9,
+                      lwd = 30,
+                      text = paste0(
+                        "Symbol: ", Symbol, "<br />",
+                        "Start: ", Start, "<br />",
+                        "End: ", End
+                      )),
+        fill = plot_color()(n = nrow(genes)),
+        alpha = 0.7
+      )
+
+    if (input$showgenes %% 2 == 0) {
+      pgene <- pgene +
+        geom_text(
+          aes(x = (Start + End) / 2,
+              y = rep(c(1.05, -0.05), length.out = nrow(genes)),
+              label = Symbol
+          ),
+          color = plot_color()(n = nrow(genes)), size = 3
+        )
+    }
+
+    pgene <- pgene +
+      coord_cartesian(xlim = c(minBP, maxBP)) +
+      ylim(-0.2, 1.2) +
+      guides(fill = FALSE, alpha = FALSE, size = FALSE) +
       ylab("Genes") +
-      theme(axis.line=element_blank(),
-            axis.text.x=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks=element_blank(),
-            axis.title.x=element_blank(),
-            legend.position="none",
-            panel.background=element_blank(),
-            panel.border=element_blank(),
-            panel.grid.major=element_blank(),
-            panel.grid.minor=element_blank(),
-            plot.background=element_blank())
+      theme_blank_no_legend
 
-    psnp <- ggplot(ld) +
-      {if(nrow(ld[ld$is_query_snp==0,])>=1)geom_segment(aes(x = pos_hg38, y = 0,
-                       xend = pos_hg38, yend = 1,
-                       text=paste0("rsID: ",rsID,"<br />",
-                                   "Position: ",pos_hg38,"<br />",
-                                   "Ref/Alt: ",ref,"/",alt)),
-                   subset(ld, is_query_snp==0), color="grey") }+
-      geom_segment(aes(x = pos_hg38, y = 0,
-                       xend = pos_hg38, yend = 1,
-                       text=paste0("rsID: ",rsID,"<br />",
-                                   "Position: ",pos_hg38,"<br />",
-                                   "Ref/Alt: ",ref,"/",alt)),
-                   subset(ld, is_query_snp==1),
-                   color=plot_color()(n=nrow(ld[ld$is_query_snp==1,]))) +
-      coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(0,1) +
-      guides(colour=FALSE, size= FALSE) +
+    # Mega Plot: SNP Plot ----
+    psnp <- ggplot(ld)
+
+    if (nrow(ld[ld$is_query_snp == 0, ]) >= 1) {
+      psnp <- psnp +
+        geom_segment(
+          aes(x = pos_hg38, y = 0,
+              xend = pos_hg38, yend = 1,
+              text = paste0(
+                "rsID: ", rsID, "<br />",
+                "Position: ", pos_hg38, "<br />",
+                "Ref/Alt: ", ref, "/", alt
+              )
+          ),
+          subset(ld, is_query_snp == 0),
+          color = "grey"
+        )
+    }
+
+    psnp <- psnp +
+      geom_segment(aes(
+        x = pos_hg38, y = 0,
+        xend = pos_hg38, yend = 1,
+        text = paste0(
+          "rsID: ", rsID, "<br />",
+          "Position: ", pos_hg38, "<br />",
+          "Ref/Alt: ", ref, "/", alt
+        )
+      ),
+      subset(ld, is_query_snp == 1),
+      color = plot_color()(n = nrow(ld[ld$is_query_snp == 1, ]))
+      ) +
+      coord_cartesian(xlim = c(minBP, maxBP)) +
+      ylim(0, 1) +
+      guides(colour = FALSE, size = FALSE) +
       ylab("SNPs") +
-      theme(axis.line=element_blank(),
-            axis.text.x=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks=element_blank(),
-            axis.title.x=element_blank(),
-            legend.position="none",
-            panel.background=element_blank(),
-            panel.border=element_blank(),
-            panel.grid.major=element_blank(),
-            panel.grid.minor=element_blank(),
-            plot.background=element_blank())
+      theme_blank_no_legend
 
-    # print(head(tads))
-
+    # Mega Plot: TAD Plot ----
     ptad <- ggplot(tads) +
-      geom_rect(aes(xmin = start, ymin = 0.1, xmax = end, ymax = 0.9,
-                    # color = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX),])),
-                    alpha = 0.7,
-                    lwd = 30, text=paste0(chrX,":",start,"-",end)),
-                subset(tads,tads$seqnames == paste0("chr", chrX)),
-                fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX),]))) +
-      coord_cartesian(xlim=c(minBP,maxBP)) +
-      ylim(0,1) +
-      guides(fill=FALSE, alpha = FALSE, size= FALSE) +
-      labs(x="BP",y="TADs") +
-      theme(axis.line.y=element_blank(),
-            axis.line.x=element_line(color="black"),
-            # axis.text.x=element_blank(),
-            axis.text.y=element_blank(),
-            axis.ticks.y=element_blank(),
-            axis.ticks.x=element_line(color="black"),
-            # axis.title.x=element_blank(),
-            # axis.title.y=element_blank(),
-            legend.position="none",
-            panel.background=element_blank(),
-            panel.border=element_blank(),
-            panel.grid.major=element_blank(),
-            panel.grid.minor=element_blank(),
-            plot.background=element_blank())
+      geom_rect(
+        aes(xmin = start, xmax = end,
+            ymin = 0.1, ymax = 0.9,
+            alpha = 0.7,
+            lwd = 30,
+            text = paste0(chrX, ":", start, "-", end)
+        ),
+        subset(tads, tads$seqnames == paste0("chr", chrX)),
+        fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]))
+      ) +
+      coord_cartesian(xlim = c(minBP, maxBP)) +
+      ylim(0, 1) +
+      guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+      labs(x = "BP", y = "TADs") +
+      theme_blank_no_legend +
+      theme(
+        axis.line.x = element_line(color = "black"),
+        axis.ticks.x = element_line(color = "black"),
+      )
 
-    # p1 <- hide_legend(ggplotly(phic, tooltip="text"))
-    p1 <- ggplotly(phic, tooltip="text")
-    p2 <- hide_legend(ggplotly(pgene, tooltip="text"))
-    p3 <- hide_legend(ggplotly(psnp, tooltip="text"))
-    p4 <- hide_legend(ggplotly(ptad, tooltip="text"))
+    # Mega Plot: Compose Final Plot
+    p1 <- ggplotly(phic, tooltip = "text")
+    p2 <- hide_legend(ggplotly(pgene, tooltip = "text"))
+    p3 <- hide_legend(ggplotly(psnp, tooltip = "text"))
+    p4 <- hide_legend(ggplotly(ptad, tooltip = "text"))
 
-    megap <- subplot(p1,p2,p3,p4, nrows = 4, heights = c(0.65,0.15,0.1,0.1),
-                     shareY = TRUE, shareX = TRUE)
-
-
-  }
-  )
+    megap <- subplot(p1, p2, p3, p4,
+                     nrows = 4, heights = c(0.65, 0.15, 0.1, 0.1),
+                     shareY = TRUE, shareX = TRUE
+    )
+  })
 
   output$plotDownload <- downloadHandler(
     filename = function() {
@@ -698,6 +572,7 @@ function(input, output, session) {
     },
     content = function(file) {
       pdf(file)
+      # ---- Mega Plot: pull in needed data pieces ----
       ld <- dat()
       chrX <- max(ld$chr, na.rm = TRUE)
 
@@ -705,63 +580,183 @@ function(input, output, session) {
       maxBP <- values$tmp_max
 
       hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
-        chr = paste0("chr", chrX),
-        from = minBP, to = maxBP
+                               chr = paste0("chr", chrX),
+                               from = minBP, to = maxBP
       )
       hic_matrix <- as.matrix(intdata(hic_dat))
 
-      genes <- getBM(
-        attributes = c("hgnc_symbol", "start_position", "end_position"),
-        filters = c("chromosomal_region"), values = paste0(chrX, ":", minBP, ":", maxBP), mart = ensembl54
-      )
+      genes <- genes()
       colnames(genes) <- c("Symbol", "Start", "End")
 
       tads <- as.data.frame(tads_imr90)
 
-      ###########################################################################################
+      # ---- Mega Plot: create plot ----
 
-      mat_layout <- matrix(c(1, 2, 3, 4, 1, 2, 3, 4), nrow = 4, ncol = 2)
-      layout(mat_layout, c(4, 4, 4, 4), c(2.25, 1.25, 0.5, 0.5))
-      par(mar = c(0.5, 4.5, 0.5, 0.5))
+      ## create dataframe for plotting triangular heatmap
+      # determine number of bins
+      nbins <- nrow(hic_matrix)
+      stepsize <- abs(minBP - maxBP) / (2 * nbins)
 
-      phic <- plotHic(hic_matrix,
-        chrom = paste0("chr", chrX),
-        chromstart = min(as.numeric(colnames(hic_matrix))),
-        chromend = max(as.numeric(colnames(hic_matrix))),
-        max_y = 20, zrange = c(0, 28), palette = plot_color(),
-        flip = FALSE
-      )
-      labelgenome(
-        chrom = paste0("chr", chrX), chromstart = minBP, chromend = maxBP,
-        side = 1, scipen = 40, n = 1, scale = "bp"
-      )
-      addlegend(phic[[1]],
-        palette = phic[[2]], title = "score", side = "right", bottominset = 0.4,
-        topinset = 0, xoffset = -.035, labelside = "left", width = 0.025, title.offset = 0.035
-      )
-      mtext("HIC Intensities", side = 2, line = 1.75, cex = .75, font = 2)
+      # scale
+      vec <- hic_matrix
+      vec[which(vec < 0)] <- 0
+      vec[which(vec > 28)] <- 28
+      breaks <- seq(0, 28, length.out = 100)
+      cols_num <- c(0:length(breaks) + 1)
+      cols_vec <- cut(vec, c(-Inf, breaks, Inf), labels = cols_num)
+      hicmcol <- matrix(as.numeric(as.character(cols_vec)), nrow = nrow(hic_matrix))
 
-      plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-      segments(x0 = genes$Start, y0 = 0.5, x1 = genes$End, y1 = 0.5, lwd = 30, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
-      text(x = (genes$Start + genes$End) / 2, y = c(0.7, 0.3, 0.8, 0.2), labels = genes$Symbol, col = plot_color()(n = nrow(genes), alpha = 0.7))
-      mtext("Genes", side = 2, line = 1.75, cex = .75, font = 2)
+      # make an empty tibble
+      tmp <- tibble(x = numeric(), y = numeric(), f = numeric(), g = character(), v = numeric())
 
-      plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-      abline(v = ld[ld$is_query_snp == 0, ]$pos_hg38, col = "grey", lend = 1) # lwd=6
-      abline(v = ld[ld$is_query_snp == 1, ]$pos_hg38, col = plot_color()(n = nrow(genes), alpha = 0.7), lend = 1)
-      mtext("LD", side = 2, line = 1.75, cex = .75, font = 2)
+      for (i in (1:nrow(hic_matrix))) {
+        y <- -.5
 
-      plot(c(1, 1), xlim = c(minBP, maxBP), ylim = c(0, 1), type = "n", bty = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "", xaxs = "i")
-      segments(
-        x0 = tads[tads$seqnames == paste0("chr", chrX), ]$start,
-        y0 = 0.5,
-        x1 = tads[tads$seqnames == paste0("chr", chrX), ]$end,
-        y1 = 0.5, lwd = 30,
-        col = plot_color()(n = nrow(genes), alpha = 0.7),
-        lend = 1
-      )
-      mtext("TADs", side = 2, line = 1.75, cex = .75, font = 2)
+        x <- minBP + (i * 2 * stepsize) - (stepsize * 2)
+        for (j in (i:ncol(hic_matrix))) {
+          x <- x + stepsize
+          y <- y + .5
 
+          poly_dat <- tibble(
+            x = c(x - stepsize, x, x + stepsize, x),
+            y = c(y, y + .5, y, y - .5),
+            f = hicmcol[i, j],
+            g = paste0("bin_", i, "_", j),
+            v = hic_matrix[i, j]
+          )
+
+          tmp <- bind_rows(tmp, poly_dat)
+        }
+      }
+      rm(i, j)
+
+      # Mega Plot: Base plot themes ----
+      theme_blank <-
+        theme(
+          axis.line = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title.x = element_blank(),
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.background = element_blank()
+        )
+
+      theme_blank_no_legend <- theme_blank + theme(legend.position = "none")
+
+      # Mega Plot: HiC Plot ----
+      phic <- ggplot(tmp, aes(x = x, y = y, text = paste0("Raw value: ", v))) +
+        geom_polygon(aes(fill = f, group = g)) +
+        scale_fill_gradientn(colors = plot_color()(n = 100), name = "Score") +
+        coord_cartesian(xlim = c(minBP, maxBP)) +
+        ylim(0, (nbins * 0.5) + 1) +
+        ylab("HIC Intensities") +
+        theme_blank +
+        theme(
+          legend.justification = c(1, 1), legend.position = c(1, 1),
+        )
+
+      # Mega Plot: Gene Plot ----
+      pgene <- ggplot(genes) +
+        geom_rect(
+          mapping = aes(xmin = Start, xmax = End,
+                        ymin = 0.1, ymax = 0.9,
+                        lwd = 30,
+                        text = paste0(
+                          "Symbol: ", Symbol, "<br />",
+                          "Start: ", Start, "<br />",
+                          "End: ", End
+                        )),
+          fill = plot_color()(n = nrow(genes)),
+          alpha = 0.7
+        )
+
+      if (input$showgenes %% 2 == 0) {
+        pgene <- pgene +
+          geom_text(
+            aes(x = (Start + End) / 2,
+                y = rep(c(1.05, -0.05), length.out = nrow(genes)),
+                label = Symbol
+            ),
+            color = plot_color()(n = nrow(genes)), size = 3
+          )
+      }
+
+      pgene <- pgene +
+        coord_cartesian(xlim = c(minBP, maxBP)) +
+        ylim(-0.2, 1.2) +
+        guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+        ylab("Genes") +
+        theme_blank_no_legend
+
+      # Mega Plot: SNP Plot ----
+      psnp <- ggplot(ld)
+
+      if (nrow(ld[ld$is_query_snp == 0, ]) >= 1) {
+        psnp <- psnp +
+          geom_segment(
+            aes(x = pos_hg38, y = 0,
+                xend = pos_hg38, yend = 1,
+                text = paste0(
+                  "rsID: ", rsID, "<br />",
+                  "Position: ", pos_hg38, "<br />",
+                  "Ref/Alt: ", ref, "/", alt
+                )
+            ),
+            subset(ld, is_query_snp == 0),
+            color = "grey"
+          )
+      }
+
+      psnp <- psnp +
+        geom_segment(aes(
+          x = pos_hg38, y = 0,
+          xend = pos_hg38, yend = 1,
+          text = paste0(
+            "rsID: ", rsID, "<br />",
+            "Position: ", pos_hg38, "<br />",
+            "Ref/Alt: ", ref, "/", alt
+          )
+        ),
+        subset(ld, is_query_snp == 1),
+        color = plot_color()(n = nrow(ld[ld$is_query_snp == 1, ]))
+        ) +
+        coord_cartesian(xlim = c(minBP, maxBP)) +
+        ylim(0, 1) +
+        guides(colour = FALSE, size = FALSE) +
+        ylab("SNPs") +
+        theme_blank_no_legend
+
+      # Mega Plot: TAD Plot ----
+      ptad <- ggplot(tads) +
+        geom_rect(
+          aes(xmin = start, xmax = end,
+              ymin = 0.1, ymax = 0.9,
+              alpha = 0.7,
+              lwd = 30,
+              text = paste0(chrX, ":", start, "-", end)
+          ),
+          subset(tads, tads$seqnames == paste0("chr", chrX)),
+          fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]))
+        ) +
+        coord_cartesian(xlim = c(minBP, maxBP)) +
+        ylim(0, 1) +
+        guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+        labs(x = "BP", y = "TADs") +
+        theme_blank_no_legend +
+        theme(
+          axis.line.x = element_line(color = "black"),
+          axis.ticks.x = element_line(color = "black"),
+        )
+
+      # Mega Plot: Compose Final Plot
+      final <- ggarrange(phic,pgene,psnp,ptad,
+                         ncol = 1, nrow = 4,heights = c(6.5,1.5, 1, 1))
+
+      print(final)
       dev.off()
     }
   )
@@ -784,41 +779,48 @@ function(input, output, session) {
     }
   })
 
-  observeEvent(input$btn_info, {
+  trigger_info_modal <- reactive({
+    input$btn_info + input$btn_info_nav
+  })
+
+  observeEvent(trigger_info_modal(), {
     modal_ui <- tagList(
-        tags$h4("App Details"),
-        tags$p(
-          "LD is calculated from", tags$a("1000 Genomes Phase 1",href="http://www.internationalgenome.org"),
-          "and queried from the", tags$a("HaploR",href="https://cran.r-project.org/web/packages/haploR/index.html"),
-          "interface to", tags$a("HaploReg.",href="http://archive.broadinstitute.org/mammals/haploreg/haploreg.php"),
-          "TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'.",
-          "eQTLs are taken from", tags$a("GTEx", href="https://gtexportal.org/home/"),
-          "and IMR90 Hi-C values are available from ",tags$a("GSE35156",href="https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE35156")
-        ),
-        tags$h4("Development Team"),
-        tags$p(
-          tags$strong("Programming:"), "Jordan Creed, Garrick Aden-Buie and Travis Gerke", tags$br(),
-          tags$strong("Scientific Input:"), "Alvaro Monteiro", tags$br(),
-          tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD"), tags$br(),
-          tags$strong("Github:"), tags$a(href = "https://github.com/GerkeLab/epiTAD", "https://github.com/GerkeLab/epiTAD")
-        ),
-        tags$h4("Other resources"),
-        tags$ul(
-          tags$li(tags$a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")),
-          tags$li(tags$a("Yue Lab 3D Genome Browser", href = "http://promoter.bx.psu.edu", target = "_blank")),
-          tags$li(tags$a("CHiCP", href="https://www.chicp.org", target = "_blank")),
-          tags$li(tags$a("HiGlass", href="http://gehlenborglab.org/research/projects/higlass/", target = "_blank"))
-        ),
+      tags$h4("App Details"),
+      tags$p(
+        "LD is calculated from", tags$a("1000 Genomes Phase 1", href = "http://www.internationalgenome.org"),
+        "and queried from the", tags$a("HaploR", href = "https://cran.r-project.org/web/packages/haploR/index.html"),
+        "interface to", tags$a("HaploReg.", href = "http://archive.broadinstitute.org/mammals/haploreg/haploreg.php"),
+        "TAD locations are based off of those defined by Dixon et al in 'Topological domains in mammalian genomes identified by analysis of chromatin interactions'.",
+        "eQTLs are taken from", tags$a("GTEx", href = "https://gtexportal.org/home/"),
+        "and IMR90 Hi-C values are available from ", tags$a("GSE35156", href = "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE35156")
+      ),
+      tags$h4("Development Team"),
+      tags$p(
+        tags$strong("Programming:"), "Jordan Creed, Garrick Aden-Buie and Travis Gerke", tags$br(),
+        tags$strong("Scientific Input:"), "Alvaro Monteiro", tags$br(),
+        tags$strong("Website:"), tags$a(href = "https://gerkelab.com/project/epiTAD", "https://gerkelab.com/project/epiTAD"), tags$br(),
+        tags$strong("Github:"), tags$a(href = "https://github.com/GerkeLab/epiTAD", "https://github.com/GerkeLab/epiTAD")
+      ),
+      tags$h4("Other resources"),
+      tags$ul(
+        tags$li(tags$a("Aiden Lab: Juicebox", href = "http://www.aidenlab.org/juicebox/", target = "_blank")),
+        tags$li(tags$a("Yue Lab 3D Genome Browser", href = "http://promoter.bx.psu.edu", target = "_blank")),
+        tags$li(tags$a("CHiCP", href = "https://www.chicp.org", target = "_blank")),
+        tags$li(tags$a("HiGlass", href = "http://gehlenborglab.org/research/projects/higlass/", target = "_blank"))
+      ),
       tags$h4("Notes"),
       tags$p(
         "If no SNPs are in LD above the specified threshold then a range of 53500 BP is applied to",
         "either side of the SNP. If SNPs in LD exist, then the range is set to the smallest region",
         "which covers of all genomic locations in LD with the queried SNP(s) and the TAD region.",
-        "This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser.")
+        "This range is used for querying data from Oncotator, ENSEMBL, ClinVar and the Genome Browser."
+      )
     )
 
-    showModal(modalDialog(title = "App Information", modal_ui,
-                          footer = modalButton("OK"), easyClose = TRUE))
+    showModal(modalDialog(
+      title = "App Information", modal_ui,
+      footer = modalButton("OK"), easyClose = TRUE
+    ))
   })
 
   observe({
@@ -847,10 +849,7 @@ function(input, output, session) {
       total_min <- total_min()
       total_max <- total_max()
 
-      genes <- getBM(
-        attributes = c("hgnc_symbol", "start_position", "end_position"),
-        filters = c("chromosomal_region"), values = paste0(chr, ":", total_min, ":", total_max), mart = ensembl54
-      )
+      genes <- genes()
 
       y <- fromJSON(paste0("http://portals.broadinstitute.org/oncotator/genes/", chr, "_", total_min, "_", total_max, "/"))
 
@@ -871,19 +870,20 @@ function(input, output, session) {
       # Return table
       etest3 <- matrix(etest2, nrow = length(etest), ncol = 4, byrow = TRUE)
       etest3 <- as.data.frame(etest3)
-      etest3 <- cbind(x[x$eQTL!=".",]$rsID,etest3)
-      colnames(etest3) <- c("SNP","Source", "Tissue", "Gene", "p")
-      etest3 <- etest3[!duplicated(etest3),]
+      etest3 <- cbind(x[x$eQTL != ".", ]$rsID, etest3)
+      colnames(etest3) <- c("SNP", "Source", "Tissue", "Gene", "p")
+      etest3 <- etest3[!duplicated(etest3), ]
       etest3 <- etest3[etest3$Tissue %in% input$tissue, ]
 
-      writexl::write_xlsx(list("haploreg" = haploReg_table,
-                               "regulome" = regulomeDB_table,
-                               "ENSEMBL" = genes,
-                               "ONCOTATOR" = onco,
-                               "eQTL" = etest3),
-                          path=file)
-
+      writexl::write_xlsx(list(
+        "haploreg" = haploReg_table,
+        "regulome" = regulomeDB_table,
+        "ENSEMBL" = genes,
+        "ONCOTATOR" = onco,
+        "eQTL" = etest3
+      ),
+      path = file
+      )
     }
   )
-
 }
