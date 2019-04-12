@@ -11,13 +11,9 @@ epiTAD is a shiny app for visualizing Hi-C data and comparing genomic annotation
 
 Users can search SNPs in two ways 1) by typing rs IDs in the text box (comma separated if multiple) or 2) uploading a text file with one rs ID per line. 
 
-### Variant annotations
+### Additional annotations
 
-![Changing displayed SNP level data](https://github.com/tgerke/epiTAD/raw/master/figures/snp_anno.gif)
-
-### Gene annotations
-
-![Changing displayed gene level data](https://github.com/tgerke/epiTAD/raw/master/figures/gene_anno.gif)
+![Changing displayed SNP level data](https://github.com/tgerke/epiTAD/raw/master/figures/anno.gif)
 
 ### Visualizations
 
@@ -28,6 +24,10 @@ By selecting plot options above the produced figure, users can alter the display
 ### Examples
 
 ![Pre-loaded examples](https://github.com/tgerke/epiTAD/raw/master/figures/preloaded_examples.gif)
+
+### More information
+
+![Additional information](https://github.com/tgerke/epiTAD/raw/master/figures/additional_pgs.gif)
 
 ## Additional Features
 
