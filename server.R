@@ -1,4 +1,6 @@
 SNP_QUERY_ERROR <- "The queried SNP may not be valid. Please check your input."
+options("epitad.cachedir" = file.path(tempdir(), "epitad"))
+dir.create(getOption("epitad.cachedir"), recursive = TRUE, showWarnings = FALSE)
 
 epitad_datatable <- function(
   x,
@@ -33,6 +35,298 @@ epitad_datatable <- function(
   )
 }
 
+query_regulomedb <- function(snp_list) {
+  shiny::validate(shiny::need(
+    !is.null(snp_list) && snp_list != "",
+    "Please enter a valid SNP or file containing SNP IDs"
+  ))
+
+  input_hash <- digest::digest(snp_list)
+
+  cache_dir <- getOption("epitad.cachedir", getwd())
+  cache_file <- file.path(cache_dir, paste0("regulome_", input_hash, ".rds"))
+  if (file.exists(cache_file)) {
+    message("Loading cached query results from: ", cache_file)
+    return(readRDS(cache_file))
+  }
+
+  x <- queryRegulome(query = snp_list)
+  if (!"score" %in% names(x$res.table)) {
+    # Got a bad response from RegulomeDB
+    regulome_error_msg <-
+      if (any(grepl("Server error", paste0(x$res.table[[1]])))) {
+        "An error occurred on the RegulomeDB server, please try again."
+      } else {
+        "An error occurred while querying RegulomeDB, please try again."
+      }
+    shiny::validate(need(FALSE, regulome_error_msg))
+  }
+  shiny::validate(need(nrow(x$res.table) > 0, SNP_QUERY_ERROR))
+  x <- as.data.frame(x$res.table)
+  x$score <- as.character(x$score)
+  x$score_anno <- NA
+
+  for (i in seq_len(nrow(x))) {
+    x$score_anno[i] <- switch(
+      x$score[i],
+      "1a" = "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak",
+      "1b" = "eQTL + TF binding + any motif + DNase Footprint + DNase peak",
+      "1c" = "eQTL + TF binding + matched TF motif + DNase peak",
+      "1d" = "eQTL + TF binding + any motif + DNase peak",
+      "1e" = "eQTL + TF binding + matched TF motif",
+      "1f" = "eQTL + TF binding / DNase peak",
+      "2a" = "TF binding + matched TF motif + matched DNase Footprint + DNase peak",
+      "2b" = "TF binding + any motif + DNase Footprint + DNase peak",
+      "2c" = "TF binding + matched TF motif + DNase peak",
+      "3a" = "TF binding + any motif + DNase peak",
+      "3b" = "TF binding + matched TF motif",
+      "4"  = "TF binding + DNase peak",
+      "5"  = "TF binding or DNase peak",
+      "Other"
+    )
+  }
+
+  message("Saving query results to: ", cache_file)
+  saveRDS(x, cache_file)
+  x
+}
+
+safely <- function(.f, error_msg = NULL, quiet = FALSE) {
+  function(...) {
+    tryCatch(
+      list(result = .f(...), error = NULL),
+      error = function(e) {
+        if (!quiet) message("Error: ", e$message)
+
+        list(result = NULL, error = if (is.null(error_msg)) e$message else error_msg)
+      },
+      interrupt = function(e) {
+        stop("Terminated by user", call. = FALSE)
+      }
+    )
+  }
+}
+
+safe_queryHaploreg <- function(...) {
+  # safe_queryHaploreg(query = snps, ldThresh = as.numeric(input$value), ldPop = input$pop)
+  input_hash <- digest::digest(list(...))
+
+  cache_dir <- getOption("epitad.cachedir", getwd())
+  cache_file <- file.path(cache_dir, paste0("haploreg_", input_hash, ".rds"))
+  if (file.exists(cache_file)) {
+    message("Loading cached query results from: ", cache_file)
+    return(readRDS(cache_file))
+  }
+
+  s_queryHaploreg <- safely(queryHaploreg)
+  x <- s_queryHaploreg(...)
+
+  if (is.null(x$error)) {
+    message("Saving query results to: ", cache_file)
+    saveRDS(x, cache_file)
+  }
+
+  x
+}
+
+
+cached_mega_plot <- function(...) {
+  args <- list(...)
+  if (is.null(names(args)) || any(names(args) == "")) {
+    stop("Arguments to cached_mega_plot() must be named")
+  }
+
+  args_hash <- digest::digest(args)
+  cache_dir <- getOption("epitad.cachedir", getwd())
+  cache_file <- file.path(cache_dir, paste0("plot_", args_hash, ".rds"))
+  if (file.exists(cache_file)) {
+    message("Loading cached plots from: ", cache_file)
+    return(readRDS(cache_file))
+  }
+
+  gg <- do.call("mega_plot", args)
+  message("Saving plot cache to: ", cache_file)
+  saveRDS(gg, cache_file)
+  gg
+}
+
+
+mega_plot <- function(ld, genes, minBP, maxBP, plot_color, show_genes = TRUE) {
+  chrX <- max(ld$chr, na.rm = TRUE)
+  hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
+                           chr = paste0("chr", chrX),
+                           from = minBP, to = maxBP
+  )
+  hic_matrix <- as.matrix(intdata(hic_dat))
+  tads <- as.data.frame(tads_imr90)
+
+  # ---- Mega Plot: create plot ----
+
+  ## create dataframe for plotting triangular heatmap
+  # determine number of bins
+  nbins <- nrow(hic_matrix)
+  stepsize <- abs(minBP - maxBP) / (2 * nbins)
+
+  # scale
+  vec <- hic_matrix
+  vec[which(vec < 0)] <- 0
+  vec[which(vec > 28)] <- 28
+  breaks <- seq(0, 28, length.out = 100)
+  cols_num <- c(0:length(breaks) + 1)
+  cols_vec <- cut(vec, c(-Inf, breaks, Inf), labels = cols_num)
+  hicmcol <- matrix(as.numeric(as.character(cols_vec)), nrow = nrow(hic_matrix))
+
+  # make an empty tibble
+  tmp <- tibble(x = numeric(), y = numeric(), f = numeric(), g = character(), v = numeric())
+
+  for (i in (1:nrow(hic_matrix))) {
+    y <- -.5
+
+    x <- minBP + (i * 2 * stepsize) - (stepsize * 2)
+    for (j in (i:ncol(hic_matrix))) {
+      x <- x + stepsize
+      y <- y + .5
+
+      poly_dat <- tibble(
+        x = c(x - stepsize, x, x + stepsize, x),
+        y = c(y, y + .5, y, y - .5),
+        f = hicmcol[i, j],
+        g = paste0("bin_", i, "_", j),
+        v = hic_matrix[i, j]
+      )
+
+      tmp <- bind_rows(tmp, poly_dat)
+    }
+  }
+  rm(i, j)
+
+  # Mega Plot: Base plot themes ----
+  theme_blank <-
+    theme(
+      axis.line = element_blank(),
+      axis.text.x = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks = element_blank(),
+      axis.title.x = element_blank(),
+      panel.background = element_blank(),
+      panel.border = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank(),
+      plot.background = element_blank()
+    )
+
+  theme_blank_no_legend <- theme_blank + theme(legend.position = "none")
+
+  gg <- list()
+
+  # Mega Plot: HiC Plot ----
+  gg$phic <- ggplot(tmp, aes(x = x, y = y, text = paste0("Raw value: ", v))) +
+    geom_polygon(aes(fill = f, group = g)) +
+    scale_fill_gradientn(colors = plot_color(n = 100), name = "Score") +
+    coord_cartesian(xlim = c(minBP, maxBP)) +
+    ylim(0, (nbins * 0.5) + 1) +
+    ylab("HIC Intensities") +
+    theme_blank +
+    theme(
+      legend.justification = c(1, 1), legend.position = c(1, 1),
+    )
+
+  # Mega Plot: Gene Plot ----
+  gg$pgene <- ggplot(genes) +
+    geom_rect(
+      mapping = aes(xmin = Start, xmax = End,
+                    ymin = 0.1, ymax = 0.9,
+                    lwd = 30,
+                    text = paste0(
+                      "Symbol: ", Symbol, "<br />",
+                      "Start: ", Start, "<br />",
+                      "End: ", End
+                    )),
+      fill = plot_color(n = nrow(genes)),
+      alpha = 0.7
+    )
+
+  if (show_genes) {
+    gg$pgene <- gg$pgene +
+      geom_text(
+        aes(x = (Start + End) / 2,
+            y = rep(c(1.05, -0.05), length.out = nrow(genes)),
+            label = Symbol
+        ),
+        color = plot_color(n = nrow(genes)), size = 3
+      )
+  }
+
+  gg$pgene <- gg$pgene +
+    coord_cartesian(xlim = c(minBP, maxBP)) +
+    ylim(-0.2, 1.2) +
+    guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+    ylab("Genes") +
+    theme_blank_no_legend
+
+  # Mega Plot: SNP Plot ----
+  gg$psnp <- ggplot(ld)
+
+  if (nrow(ld[ld$is_query_snp == 0, ]) >= 1) {
+    gg$psnp <- gg$psnp +
+      geom_segment(
+        aes(x = pos_hg38, y = 0,
+            xend = pos_hg38, yend = 1,
+            text = paste0(
+              "rsID: ", rsID, "<br />",
+              "Position: ", pos_hg38, "<br />",
+              "Ref/Alt: ", ref, "/", alt
+            )
+        ),
+        subset(ld, is_query_snp == 0),
+        color = "grey"
+      )
+  }
+
+  gg$psnp <- gg$psnp +
+    geom_segment(aes(
+      x = pos_hg38, y = 0,
+      xend = pos_hg38, yend = 1,
+      text = paste0(
+        "rsID: ", rsID, "<br />",
+        "Position: ", pos_hg38, "<br />",
+        "Ref/Alt: ", ref, "/", alt
+      )
+    ),
+    subset(ld, is_query_snp == 1),
+    color = plot_color(n = nrow(ld[ld$is_query_snp == 1, ]))
+    ) +
+    coord_cartesian(xlim = c(minBP, maxBP)) +
+    ylim(0, 1) +
+    guides(colour = FALSE, size = FALSE) +
+    ylab("SNPs") +
+    theme_blank_no_legend
+
+  # Mega Plot: TAD Plot ----
+  gg$ptad <- ggplot(tads) +
+    geom_rect(
+      aes(xmin = start, xmax = end,
+          ymin = 0.1, ymax = 0.9,
+          alpha = 0.7,
+          lwd = 30,
+          text = paste0(chrX, ":", start, "-", end)
+      ),
+      subset(tads, tads$seqnames == paste0("chr", chrX)),
+      fill = plot_color(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]))
+    ) +
+    coord_cartesian(xlim = c(minBP, maxBP)) +
+    ylim(0, 1) +
+    guides(fill = FALSE, alpha = FALSE, size = FALSE) +
+    labs(x = "BP", y = "TADs") +
+    theme_blank_no_legend +
+    theme(
+      axis.line.x = element_line(color = "black"),
+      axis.ticks.x = element_line(color = "black"),
+    )
+
+  gg
+}
+
 function(input, output, session) {
   # Enable bookmarking button and update URL on bookmark
   setBookmarkExclude("file1")
@@ -43,45 +337,27 @@ function(input, output, session) {
 
   DT:::DT2BSClass(c("stripe", "hover", "compact", "cell-border"))
 
-  sample <- eventReactive(input$update1, {
+  snp_input_file <- eventReactive(input$update1, {
     samplefile <- input$file1
     if (is.null(samplefile)) {
       return()
     }
-    sample1 <- read.table(file = samplefile$datapath, sep = "\t", header = FALSE, stringsAsFactors = FALSE)
+    read.table(file = samplefile$datapath, sep = "\t", header = FALSE, stringsAsFactors = FALSE)
   })
-
-  safely <- function(.f, error_msg = NULL, quiet = FALSE) {
-    function(...) {
-      tryCatch(
-        list(result = .f(...), error = NULL),
-        error = function(e) {
-          if (!quiet) message("Error: ", e$message)
-
-          list(result = NULL, error = if (is.null(error_msg)) e$message else error_msg)
-        },
-        interrupt = function(e) {
-          stop("Terminated by user", call. = FALSE)
-        }
-      )
-    }
-  }
-
-  safe_queryHaploreg <- safely(queryHaploreg)
 
   # A flag to trigger recalc of other UI elements when query button is hit
   r_trigger_queried <- reactiveVal(FALSE)
 
   dat <- eventReactive(input$update1, {
     if (input$snpList == "") {
-      dat <- sample()
+      req(snp_input_file())
+      dat <- snp_input_file()
       snps <- dat[, 1]
-      x <- safe_queryHaploreg(query = snps, ldThresh = as.numeric(input$value), ldPop = input$pop)
     } else {
       snps <- as.character(unlist(strsplit(input$snpList, ",")))
       snps <- trimws(snps)
-      x <- safe_queryHaploreg(query = snps, ldThresh = input$value, ldPop = input$pop)
     }
+    x <- safe_queryHaploreg(query = snps, ldThresh = as.numeric(input$value), ldPop = input$pop)
     shiny::validate(need(is.null(x$error), SNP_QUERY_ERROR))
     r_trigger_queried(!r_trigger_queried())
     if (is.null(x$error)) {
@@ -106,58 +382,25 @@ function(input, output, session) {
   })
 
   dat2 <- eventReactive(input$update1, {
+    shiny::validate(shiny::need(
+      (!is.null(input$snpList) && input$snpList != "") || !is.null(snp_input_file()),
+      "Please enter a SNP ID or a file containing SNP IDs"
+    ))
+
     if (input$snpList == "") {
-      dat <- sample()
+      req(snp_input_file())
+      dat <- snp_input_file()
       snps <- dat[, 1]
-      x <- queryRegulome(query = snps)
-      x <- as.data.frame(x$res.table)
-      x$score <- as.character(x$score)
-      x$score_anno <- NA
     } else {
       snps <- as.character(unlist(strsplit(input$snpList, ",")))
       snps <- trimws(snps)
-      x <- queryRegulome(query = snps)
-      if (!"score" %in% names(x$res.table)) {
-        # Got a bad response from RegulomeDB
-        regulome_error_msg <-
-          if (any(grepl("Server error", paste0(x$res.table[[1]])))) {
-            "An error occurred on the RegulomeDB server, please try again."
-          } else {
-            "An error occurred while querying RegulomeDB, please try again."
-          }
-        shiny::validate(need(FALSE, regulome_error_msg))
-      }
-      shiny::validate(need(nrow(x$res.table) > 0, SNP_QUERY_ERROR))
-      x <- as.data.frame(x$res.table)
-      x$score <- as.character(x$score)
-      x$score_anno <- NA
     }
-
-    for (i in seq_len(nrow(x))) {
-      x$score_anno[i] <- switch(
-        x$score[i],
-        "1a" = "eQTL + TF binding + matched TF motif + matched DNase Footprint + DNase peak",
-        "1b" = "eQTL + TF binding + any motif + DNase Footprint + DNase peak",
-        "1c" = "eQTL + TF binding + matched TF motif + DNase peak",
-        "1d" = "eQTL + TF binding + any motif + DNase peak",
-        "1e" = "eQTL + TF binding + matched TF motif",
-        "1f" = "eQTL + TF binding / DNase peak",
-        "2a" = "TF binding + matched TF motif + matched DNase Footprint + DNase peak",
-        "2b" = "TF binding + any motif + DNase Footprint + DNase peak",
-        "2c" = "TF binding + matched TF motif + DNase peak",
-        "3a" = "TF binding + any motif + DNase peak",
-        "3b" = "TF binding + matched TF motif",
-        "4"  = "TF binding + DNase peak",
-        "5"  = "TF binding or DNase peak",
-        "Other"
-      )
-    }
-    x
+    query_regulomedb(snps)
   })
 
   snps <- eventReactive(input$update1, {
     if (input$snpList == "") {
-      dat <- sample()
+      dat <- snp_input_file()
       snps <- dat[, 1]
       return(snps)
     }
@@ -374,191 +617,31 @@ function(input, output, session) {
 
   # Mega Plot ---------------------------------------------------------------
   output$megaPlot <- renderPlotly({
-    # ---- Mega Plot: pull in needed data pieces ----
     ld <- dat()
-    chrX <- max(ld$chr, na.rm = TRUE)
 
     minBP <- values$tmp_min
     maxBP <- values$tmp_max
 
-    hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
-                             chr = paste0("chr", chrX),
-                             from = minBP, to = maxBP
+    shiny::validate(
+      need(
+        maxBP - minBP < 5000000,
+        "Please choose SNPs or adjust the BP range so that SNPs are within 5,000,000 BP."
+      )
     )
-    hic_matrix <- as.matrix(intdata(hic_dat))
 
     genes <- genes()
     colnames(genes) <- c("Symbol", "Start", "End")
 
-    tads <- as.data.frame(tads_imr90)
-
-    # ---- Mega Plot: create plot ----
-
-    ## create dataframe for plotting triangular heatmap
-    # determine number of bins
-    nbins <- nrow(hic_matrix)
-    stepsize <- abs(minBP - maxBP) / (2 * nbins)
-
-    # scale
-    vec <- hic_matrix
-    vec[which(vec < 0)] <- 0
-    vec[which(vec > 28)] <- 28
-    breaks <- seq(0, 28, length.out = 100)
-    cols_num <- c(0:length(breaks) + 1)
-    cols_vec <- cut(vec, c(-Inf, breaks, Inf), labels = cols_num)
-    hicmcol <- matrix(as.numeric(as.character(cols_vec)), nrow = nrow(hic_matrix))
-
-    # make an empty tibble
-    tmp <- tibble(x = numeric(), y = numeric(), f = numeric(), g = character(), v = numeric())
-
-    for (i in (1:nrow(hic_matrix))) {
-      y <- -.5
-
-      x <- minBP + (i * 2 * stepsize) - (stepsize * 2)
-      for (j in (i:ncol(hic_matrix))) {
-        x <- x + stepsize
-        y <- y + .5
-
-        poly_dat <- tibble(
-          x = c(x - stepsize, x, x + stepsize, x),
-          y = c(y, y + .5, y, y - .5),
-          f = hicmcol[i, j],
-          g = paste0("bin_", i, "_", j),
-          v = hic_matrix[i, j]
-        )
-
-        tmp <- bind_rows(tmp, poly_dat)
-      }
-    }
-    rm(i, j)
-
-    # Mega Plot: Base plot themes ----
-    theme_blank <-
-      theme(
-        axis.line = element_blank(),
-        axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.x = element_blank(),
-        panel.background = element_blank(),
-        panel.border = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.background = element_blank()
-      )
-
-    theme_blank_no_legend <- theme_blank + theme(legend.position = "none")
-
-    # Mega Plot: HiC Plot ----
-    phic <- ggplot(tmp, aes(x = x, y = y, text = paste0("Raw value: ", v))) +
-      geom_polygon(aes(fill = f, group = g)) +
-      scale_fill_gradientn(colors = plot_color()(n = 100), name = "Score") +
-      coord_cartesian(xlim = c(minBP, maxBP)) +
-      ylim(0, (nbins * 0.5) + 1) +
-      ylab("HIC Intensities") +
-      theme_blank +
-      theme(
-        legend.justification = c(1, 1), legend.position = c(1, 1),
-      )
-
-    # Mega Plot: Gene Plot ----
-    pgene <- ggplot(genes) +
-      geom_rect(
-        mapping = aes(xmin = Start, xmax = End,
-                      ymin = 0.1, ymax = 0.9,
-                      lwd = 30,
-                      text = paste0(
-                        "Symbol: ", Symbol, "<br />",
-                        "Start: ", Start, "<br />",
-                        "End: ", End
-                      )),
-        fill = plot_color()(n = nrow(genes)),
-        alpha = 0.7
-      )
-
-    if (input$showgenes %% 2 == 0) {
-      pgene <- pgene +
-        geom_text(
-          aes(x = (Start + End) / 2,
-              y = rep(c(1.05, -0.05), length.out = nrow(genes)),
-              label = Symbol
-          ),
-          color = plot_color()(n = nrow(genes)), size = 3
-        )
-    }
-
-    pgene <- pgene +
-      coord_cartesian(xlim = c(minBP, maxBP)) +
-      ylim(-0.2, 1.2) +
-      guides(fill = FALSE, alpha = FALSE, size = FALSE) +
-      ylab("Genes") +
-      theme_blank_no_legend
-
-    # Mega Plot: SNP Plot ----
-    psnp <- ggplot(ld)
-
-    if (nrow(ld[ld$is_query_snp == 0, ]) >= 1) {
-      psnp <- psnp +
-        geom_segment(
-          aes(x = pos_hg38, y = 0,
-              xend = pos_hg38, yend = 1,
-              text = paste0(
-                "rsID: ", rsID, "<br />",
-                "Position: ", pos_hg38, "<br />",
-                "Ref/Alt: ", ref, "/", alt
-              )
-          ),
-          subset(ld, is_query_snp == 0),
-          color = "grey"
-        )
-    }
-
-    psnp <- psnp +
-      geom_segment(aes(
-        x = pos_hg38, y = 0,
-        xend = pos_hg38, yend = 1,
-        text = paste0(
-          "rsID: ", rsID, "<br />",
-          "Position: ", pos_hg38, "<br />",
-          "Ref/Alt: ", ref, "/", alt
-        )
-      ),
-      subset(ld, is_query_snp == 1),
-      color = plot_color()(n = nrow(ld[ld$is_query_snp == 1, ]))
-      ) +
-      coord_cartesian(xlim = c(minBP, maxBP)) +
-      ylim(0, 1) +
-      guides(colour = FALSE, size = FALSE) +
-      ylab("SNPs") +
-      theme_blank_no_legend
-
-    # Mega Plot: TAD Plot ----
-    ptad <- ggplot(tads) +
-      geom_rect(
-        aes(xmin = start, xmax = end,
-            ymin = 0.1, ymax = 0.9,
-            alpha = 0.7,
-            lwd = 30,
-            text = paste0(chrX, ":", start, "-", end)
-        ),
-        subset(tads, tads$seqnames == paste0("chr", chrX)),
-        fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]))
-      ) +
-      coord_cartesian(xlim = c(minBP, maxBP)) +
-      ylim(0, 1) +
-      guides(fill = FALSE, alpha = FALSE, size = FALSE) +
-      labs(x = "BP", y = "TADs") +
-      theme_blank_no_legend +
-      theme(
-        axis.line.x = element_line(color = "black"),
-        axis.ticks.x = element_line(color = "black"),
-      )
-
+    gg <- cached_mega_plot(
+      ld = ld, genes = genes, minBP = minBP, maxBP = maxBP,
+      plot_color = plot_color(),
+      show_genes = input$showgenes %% 2 == 0
+    )
     # Mega Plot: Compose Final Plot
-    p1 <- ggplotly(phic, tooltip = "text")
-    p2 <- hide_legend(ggplotly(pgene, tooltip = "text"))
-    p3 <- hide_legend(ggplotly(psnp, tooltip = "text"))
-    p4 <- hide_legend(ggplotly(ptad, tooltip = "text"))
+    p1 <- ggplotly(gg$phic, tooltip = "text")
+    p2 <- hide_legend(ggplotly(gg$pgene, tooltip = "text"))
+    p3 <- hide_legend(ggplotly(gg$psnp, tooltip = "text"))
+    p4 <- hide_legend(ggplotly(gg$ptad, tooltip = "text"))
 
     megap <- subplot(p1, p2, p3, p4,
                      nrows = 4, heights = c(0.65, 0.15, 0.1, 0.1),
@@ -572,188 +655,29 @@ function(input, output, session) {
     },
     content = function(file) {
       pdf(file)
-      # ---- Mega Plot: pull in needed data pieces ----
       ld <- dat()
-      chrX <- max(ld$chr, na.rm = TRUE)
 
       minBP <- values$tmp_min
       maxBP <- values$tmp_max
 
-      hic_dat <- extractRegion(hiC[[paste0("chr", chrX, "chr", chrX)]],
-                               chr = paste0("chr", chrX),
-                               from = minBP, to = maxBP
+      shiny::validate(
+        need(
+          maxBP - minBP < 5000000,
+          "Please choose SNPs or adjust the BP range so that SNPs are within 5,000,000 BP."
+        )
       )
-      hic_matrix <- as.matrix(intdata(hic_dat))
 
       genes <- genes()
       colnames(genes) <- c("Symbol", "Start", "End")
 
-      tads <- as.data.frame(tads_imr90)
-
-      # ---- Mega Plot: create plot ----
-
-      ## create dataframe for plotting triangular heatmap
-      # determine number of bins
-      nbins <- nrow(hic_matrix)
-      stepsize <- abs(minBP - maxBP) / (2 * nbins)
-
-      # scale
-      vec <- hic_matrix
-      vec[which(vec < 0)] <- 0
-      vec[which(vec > 28)] <- 28
-      breaks <- seq(0, 28, length.out = 100)
-      cols_num <- c(0:length(breaks) + 1)
-      cols_vec <- cut(vec, c(-Inf, breaks, Inf), labels = cols_num)
-      hicmcol <- matrix(as.numeric(as.character(cols_vec)), nrow = nrow(hic_matrix))
-
-      # make an empty tibble
-      tmp <- tibble(x = numeric(), y = numeric(), f = numeric(), g = character(), v = numeric())
-
-      for (i in (1:nrow(hic_matrix))) {
-        y <- -.5
-
-        x <- minBP + (i * 2 * stepsize) - (stepsize * 2)
-        for (j in (i:ncol(hic_matrix))) {
-          x <- x + stepsize
-          y <- y + .5
-
-          poly_dat <- tibble(
-            x = c(x - stepsize, x, x + stepsize, x),
-            y = c(y, y + .5, y, y - .5),
-            f = hicmcol[i, j],
-            g = paste0("bin_", i, "_", j),
-            v = hic_matrix[i, j]
-          )
-
-          tmp <- bind_rows(tmp, poly_dat)
-        }
-      }
-      rm(i, j)
-
-      # Mega Plot: Base plot themes ----
-      theme_blank <-
-        theme(
-          axis.line = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title.x = element_blank(),
-          panel.background = element_blank(),
-          panel.border = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.background = element_blank()
-        )
-
-      theme_blank_no_legend <- theme_blank + theme(legend.position = "none")
-
-      # Mega Plot: HiC Plot ----
-      phic <- ggplot(tmp, aes(x = x, y = y, text = paste0("Raw value: ", v))) +
-        geom_polygon(aes(fill = f, group = g)) +
-        scale_fill_gradientn(colors = plot_color()(n = 100), name = "Score") +
-        coord_cartesian(xlim = c(minBP, maxBP)) +
-        ylim(0, (nbins * 0.5) + 1) +
-        ylab("HIC Intensities") +
-        theme_blank +
-        theme(
-          legend.justification = c(1, 1), legend.position = c(1, 1),
-        )
-
-      # Mega Plot: Gene Plot ----
-      pgene <- ggplot(genes) +
-        geom_rect(
-          mapping = aes(xmin = Start, xmax = End,
-                        ymin = 0.1, ymax = 0.9,
-                        lwd = 30,
-                        text = paste0(
-                          "Symbol: ", Symbol, "<br />",
-                          "Start: ", Start, "<br />",
-                          "End: ", End
-                        )),
-          fill = plot_color()(n = nrow(genes)),
-          alpha = 0.7
-        )
-
-      if (input$showgenes %% 2 == 0) {
-        pgene <- pgene +
-          geom_text(
-            aes(x = (Start + End) / 2,
-                y = rep(c(1.05, -0.05), length.out = nrow(genes)),
-                label = Symbol
-            ),
-            color = plot_color()(n = nrow(genes)), size = 3
-          )
-      }
-
-      pgene <- pgene +
-        coord_cartesian(xlim = c(minBP, maxBP)) +
-        ylim(-0.2, 1.2) +
-        guides(fill = FALSE, alpha = FALSE, size = FALSE) +
-        ylab("Genes") +
-        theme_blank_no_legend
-
-      # Mega Plot: SNP Plot ----
-      psnp <- ggplot(ld)
-
-      if (nrow(ld[ld$is_query_snp == 0, ]) >= 1) {
-        psnp <- psnp +
-          geom_segment(
-            aes(x = pos_hg38, y = 0,
-                xend = pos_hg38, yend = 1,
-                text = paste0(
-                  "rsID: ", rsID, "<br />",
-                  "Position: ", pos_hg38, "<br />",
-                  "Ref/Alt: ", ref, "/", alt
-                )
-            ),
-            subset(ld, is_query_snp == 0),
-            color = "grey"
-          )
-      }
-
-      psnp <- psnp +
-        geom_segment(aes(
-          x = pos_hg38, y = 0,
-          xend = pos_hg38, yend = 1,
-          text = paste0(
-            "rsID: ", rsID, "<br />",
-            "Position: ", pos_hg38, "<br />",
-            "Ref/Alt: ", ref, "/", alt
-          )
-        ),
-        subset(ld, is_query_snp == 1),
-        color = plot_color()(n = nrow(ld[ld$is_query_snp == 1, ]))
-        ) +
-        coord_cartesian(xlim = c(minBP, maxBP)) +
-        ylim(0, 1) +
-        guides(colour = FALSE, size = FALSE) +
-        ylab("SNPs") +
-        theme_blank_no_legend
-
-      # Mega Plot: TAD Plot ----
-      ptad <- ggplot(tads) +
-        geom_rect(
-          aes(xmin = start, xmax = end,
-              ymin = 0.1, ymax = 0.9,
-              alpha = 0.7,
-              lwd = 30,
-              text = paste0(chrX, ":", start, "-", end)
-          ),
-          subset(tads, tads$seqnames == paste0("chr", chrX)),
-          fill = plot_color()(n = nrow(tads[tads$seqnames == paste0("chr", chrX), ]))
-        ) +
-        coord_cartesian(xlim = c(minBP, maxBP)) +
-        ylim(0, 1) +
-        guides(fill = FALSE, alpha = FALSE, size = FALSE) +
-        labs(x = "BP", y = "TADs") +
-        theme_blank_no_legend +
-        theme(
-          axis.line.x = element_line(color = "black"),
-          axis.ticks.x = element_line(color = "black"),
-        )
+      gg <- cached_mega_plot(
+        ld = ld, genes = genes, minBP = minBP, maxBP = maxBP,
+        plot_color = plot_color(),
+        show_genes = input$showgenes %% 2 == 0
+      )
 
       # Mega Plot: Compose Final Plot
-      final <- ggarrange(phic,pgene,psnp,ptad,
+      final <- ggarrange(gg$phic, gg$pgene, gg$psnp, gg$ptad,
                          ncol = 1, nrow = 4,heights = c(6.5,1.5, 1, 1))
 
       print(final)
