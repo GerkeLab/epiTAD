@@ -21,7 +21,7 @@ logger <- function(...) {
 
 # Global Data
 logger("Connecting to BioMart: ensembl, hsapiens_gene_ensemble")
-ensembl54 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl",mirror = "useast")
+ensembl54 <- useEnsembl("ensembl", dataset = "hsapiens_gene_ensembl")
 logger("Loading cached HiC Data")
 load("data/hicData.Rdata")
 
